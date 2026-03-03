@@ -81,7 +81,7 @@
                                 </tr>
                             </tbody>
                         </table>
-                        <button class="btn btn-primary" type="button">{% block locationButton %}{% endblock %}</button>
+                        <button class="btn btn-primary" type="button" onclick="setMapView()">{% block locationButton %}{% endblock %}</button>
                     </div>
                 </div>
             </div>
@@ -97,19 +97,19 @@
                             <tbody class="table-group-divider">
                                 <tr>
                                     <th scope="row">{% block batteryCharge %}{% endblock %} [Ah]</th>
-                                    <td>0.0</td>
+                                    <td><span id="batteryCharge"></span></td>
                                 </tr>
                                 <tr>
                                     <th scope="row">{% block batteryPct %}{% endblock %}</th>
-                                    <td>0.0</td>
+                                    <td><span id="batteryPercentage"></span>0</td>
                                 </tr>
                                 <tr>
                                     <th scope="row">{% block batteryTemp %}{% endblock %} [°C]</th>
-                                    <td>0.0</td>
+                                    <td><span id="batteryTemp"></span></td>
                                 </tr>
                             </tbody>
                         </table>
-                        <button class="btn btn-primary" type="button">{% block batteryButton %}{% endblock %}</button>
+                        <button class="btn btn-primary" type="button" disabled>{% block batteryButton %}{% endblock %}</button>
                     </div>
                 </div>
             </div>
@@ -141,8 +141,8 @@
                             </tbody>
                         </table>
                         <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" role="switch" id="switch-manual-control">
-                            <label class="form-check-label" for="switch-manual-control">{% block controlSwitch %}{% endblock %}</label>
+                            <input class="form-check-input" type="checkbox" role="switch" id="switchManualControl">
+                            <label class="form-check-label" for="switchManualControl">{% block controlSwitch %}{% endblock %}</label>
                         </div>
                     </div>
                 </div>
@@ -163,23 +163,23 @@
                             <tbody class="table-group-divider">
                                 <tr>
                                     <th scope="row">{% block navStatus %}{% endblock %}</th>
-                                    <td>PENDING</td>
+                                    <td><span id="navStatus"></span></td>
                                 </tr>
                                 <tr>
                                     <th scope="row">{% block navTimeRem %}{% endblock %} [s]</th>
-                                    <td>0.0</td>
+                                    <td><span id="navTimeRem"></span></td>
                                 </tr>
                                 <tr>
                                     <th scope="row">{% block navDistRem %}{% endblock %} [m]</th>
-                                    <td>0.0</td>
+                                    <td><span id="navDistRem"></span></td>
                                 </tr>
                                 <tr>
                                     <th scope="row">{% block navNavTime %}{% endblock %} [s]</th>
-                                    <td>0.0</td>
+                                    <td><span id="navNavTime"></span></td>
                                 </tr>
                                 <tr>
                                     <th scope="row">{% block navNumRecs %}{% endblock %}</th>
-                                    <td>0</td>
+                                    <td><span id="navNumRecs"></span></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -188,16 +188,16 @@
                                 <label for="inputNavTarget" class="col-form-label"><b>{% block navTarget %}{% endblock %}</b></label>
                             </div>
                             <div class="col-auto">
-                                <select class="form-select" id="inputNavTarget">
-                                    <option value="navTarget1">{% block navTarget1 %}{% endblock %}</option>
-                                    <option value="navTarget2">{% block navTarget2 %}{% endblock %}</option>
-                                    <option value="navTarget3">{% block navTarget3 %}{% endblock %}</option>
-                                    <option value="navTarget4">{% block navTarget4 %}{% endblock %}</option>
+                                <select class="form-select" onmousedown="this.value='';" onchange="setNavGoal(this.value);" id="inputNavTarget">
+                                    <option value="mapClick">{% block navTarget1 %}{% endblock %}</option>
+                                    <option value="automotiveLab">{% block navTarget2 %}{% endblock %}</option>
+                                    <option value="manufacturingLab">{% block navTarget3 %}{% endblock %}</option>
+                                    <option value="roboticsLab">{% block navTarget4 %}{% endblock %}</option>
                                 </select>
                             </div>
                         </div>
-                        <button class="btn btn-success" type="button">{% block navStartButton %}{% endblock %}</button>
-                        <button class="btn btn-danger" type="button">{% block navCancelButton %}{% endblock %}</button>
+                        <button class="btn btn-success" type="button" onclick="navStart();" id="navStart">{% block navStartButton %}{% endblock %}</button>
+                        <button class="btn btn-danger" type="button" onclick="navCancel();">{% block navStopButton %}{% endblock %}</button>
                     </div>
                 </div>
                 

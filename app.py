@@ -74,21 +74,22 @@ def on_nav_result(result: config.TaskResult):
 
 
 @socketio.event
-def navigate(target: str):
+def nav_start(location: dict):
     """Receive a navigation target from a client."""
     if not teleop:
         return
-    if target == config.NAV_TARGET_STOP:
-        teleop.cancel_nav_task()
-        socketio.emit('nav_result', 'ABORTED  ')
-        return
-    if not target in config.NAV_TARGETS.keys():
-        socketio.emit('nav_result', 'INVALID  ')
-        return
-    lat = config.NAV_TARGETS[target]['latitude']
-    lon = config.NAV_TARGETS[target]['longitude']
-    yaw = config.NAV_TARGETS[target]['yaw']
+    lat = location['lat']
+    lon = location['lon']
+    yaw = location['yaw']
     teleop.start_nav_task(lat, lon, yaw, on_nav_result)
+
+
+@socketio.event
+def nav_cancel():
+    if not teleop:
+        return
+    teleop.cancel_nav_task()
+    socketio.emit('nav_result', 'ABORTED')
 
 
 if __name__ == '__main__':

@@ -25,7 +25,6 @@ def callback_on_battery_state(msg: BatteryState):
         'charge': round(msg.charge, 1),
         'percentage': round(100 * msg.percentage, 1),
         'temperature': round(msg.temperature, 1),
-        'voltage': round(msg.voltage, 1),
     }
 
     sio.emit('on_battery_state', battery_state)
