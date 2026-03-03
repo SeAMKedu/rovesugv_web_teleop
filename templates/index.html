@@ -4,8 +4,231 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RovesUGV | Web Teleop</title>
+    <link rel="stylesheet" href="/static/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/css/leaflet.css">
+    <link rel="stylesheet" href="/static/fontawesome/css/all.css">
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="shortcut icon" href="/static/favicon.ico" type="image/x-icon">
+    <script src="/static/js/libs/bootstrap.bundle.js" type="text/javascript"></script>
+    <script src="/static/js/libs/jquery-4.0.0.min.js.js" type="text/javascript"></script>
+    <script src="/static/js/libs/leaflet.js" type="text/javascript"></script>
+    <script src="/static/js/libs/leaflet.geometryutil.js" type="text/javascript"></script>
+    <script src="/static/js/libs/leaflet-arrowheads.js" type="text/javascript"></script>
+    <script src="/static/js/libs/socket.io.min.js.js"></script>
 </head>
 <body>
-    
+    <!--Navigation bar-->
+    <nav class="navbar navbar-expand-lg bg-dark border-bottom border-body" data-bs-theme="dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#" >
+                <span style="color: crimson;" id="sioConnColor">
+                    <i class="fas fa-link-slash" id="sioConnIcon"></i>
+                </span> Web Teleop
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topnav" aria-controls="topnav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="topnav">
+                <ul class="navbar-nav">
+                    <!--Language selection-->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-language"></i> Language
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="?lang=en"><img src="/static/img/gb.svg" style="height: 10px;"> English</a></li>
+                            <li><a class="dropdown-item" href="?lang=fi"><img src="/static/img/fi.svg" style="height: 10px;"> Suomi</a></li>
+                        </ul>
+                    </li>
+                    <!--Theme selection-->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-palette"></i> Theme
+                        </a>
+                        <ul class="dropdown-menu">
+                            <button class="dropdown-item btn btn-primary" onclick="setTheme('dark')"><i class="fas fa-moon"></i> {% block themeDark %}{% endblock %}</button>
+                            <button class="dropdown-item btn btn-primary" onclick="setTheme('light')"><i class="fas fa-sun"></i> {% block themeLigth %}{% endblock %}</button>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container" data-bs-theme="light">
+        <div class="row mt-3">
+            
+            <!--Location information-->
+            <div class="col-sm mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-location-dot"></i> {% block locationTitle %}{% endblock %}
+                        </h5>
+                        <table class="table">
+                            <tbody class="table-group-divider">
+                                <tr>
+                                    <th scope="row">{% block locationLat %}{% endblock %}</th>
+                                    <td>0.0</td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">{% block locationLon %}{% endblock %}</th>
+                                    <td>0.0</td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">{% block locationAlt %}{% endblock %}</th>
+                                    <td>0.0</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <button class="btn btn-primary" type="button">{% block locationButton %}{% endblock %}</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!--Battery status-->
+            <div class="col-sm mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-car-battery"></i> {% block batteryTitle %}{% endblock %}
+                        </h5>
+                        <table class="table">
+                            <tbody class="table-group-divider">
+                                <tr>
+                                    <th scope="row">{% block batteryCharge %}{% endblock %} [Ah]</th>
+                                    <td>0.0</td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">{% block batteryPct %}{% endblock %}</th>
+                                    <td>0.0</td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">{% block batteryTemp %}{% endblock %} [°C]</th>
+                                    <td>0.0</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <button class="btn btn-primary" type="button">{% block batteryButton %}{% endblock %}</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!--Manual control-->
+            <div class="col-sm mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-keyboard"></i> {% block controlTitle %}{% endblock %}
+                        </h5>
+                        <table class="table">
+                            <tbody class="table-group-divider">
+                                <tr>
+                                    <td><i class="fas fa-arrow-turn-up fa-rotate-270"></i> u</td>
+                                    <td><i class="fas fa-arrow-up"></i> i</td>
+                                    <td><i class="fas fa-arrow-turn-down fa-rotate-270"></i> o</td>
+                                </tr>
+                                <tr>
+                                    <td><i class="fas fa-arrow-rotate-left"></i> j</td>
+                                    <td><i class="fas fa-x"></i> k</td>
+                                    <td><i class="fas fa-arrow-rotate-right"></i> l</td>
+                                </tr>
+                                <tr>
+                                    <td><i class="fas fa-arrow-turn-down fa-rotate-90"></i> m</td>
+                                    <td><i class="fas fa-arrow-down"></i> ,</td>
+                                    <td><i class="fas fa-arrow-turn-up fa-rotate-90"></i> .</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="switch-manual-control">
+                            <label class="form-check-label" for="switch-manual-control">{% block controlSwitch %}{% endblock %}</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="row">
+            <div class="col-sm-5 mb-3">
+
+                <!--Navigation status, control, and feedback-->
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-location-arrow"></i> {% block navTitle %}{% endblock %}
+                        </h5>
+                        <table class="table">
+                            <tbody class="table-group-divider">
+                                <tr>
+                                    <th scope="row">{% block navStatus %}{% endblock %}</th>
+                                    <td>PENDING</td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">{% block navTimeRem %}{% endblock %} [s]</th>
+                                    <td>0.0</td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">{% block navDistRem %}{% endblock %} [m]</th>
+                                    <td>0.0</td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">{% block navNavTime %}{% endblock %} [s]</th>
+                                    <td>0.0</td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">{% block navNumRecs %}{% endblock %}</th>
+                                    <td>0</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="row mb-3">
+                            <div class="col-auto">
+                                <label for="inputNavTarget" class="col-form-label"><b>{% block navTarget %}{% endblock %}</b></label>
+                            </div>
+                            <div class="col-auto">
+                                <select class="form-select" id="inputNavTarget">
+                                    <option value="navTarget1">{% block navTarget1 %}{% endblock %}</option>
+                                    <option value="navTarget2">{% block navTarget2 %}{% endblock %}</option>
+                                    <option value="navTarget3">{% block navTarget3 %}{% endblock %}</option>
+                                    <option value="navTarget4">{% block navTarget4 %}{% endblock %}</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button class="btn btn-success" type="button">{% block navStartButton %}{% endblock %}</button>
+                        <button class="btn btn-danger" type="button">{% block navCancelButton %}{% endblock %}</button>
+                    </div>
+                </div>
+                
+                <!--Target system: simulation or real rover-->
+                <div class="card mt-3">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="fas fa-gear"></i> {% block targetSystem %}{% endblock %}</h5>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="systemOption" id="systemOption1" checked>
+                            <label class="form-check-label" for="systemOption1">
+                                {% block targetSimulation %}{% endblock %}
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="systemOption" id="systemOption2">
+                            <label class="form-check-label" for="systemOption2">
+                                Panther
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!--Map-->
+            <div class="col-sm-7 mb-3">
+                <div id="map"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="/static/js/webinterface.js" type="text/javascript"></script>
 </body>
 </html>
