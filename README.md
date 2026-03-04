@@ -5,6 +5,16 @@ Verkkosovellus, jolla voi etäoperoida oikeaa tai simuloitua mobiilirobottia
 
 Status: toimii toistaiseksi vain simuloidun robotin kanssa
 
+## Ohjelmistoriippuvuudet
+
+* ROS 2 Humble
+* Nav2
+
+```
+$ sudo apt install ros-humble-navigation2
+$ sudo apt install ros-humble-nav2-bringup
+```
+
 ## How to
 Simulaattori on saatavilla osoitteessa [https://github.com/SeAMKedu/rovesugv_navsim](https://github.com/SeAMKedu/rovesugv_navsim).
 

@@ -99,7 +99,7 @@ var socketio = io();
 socketio.on('battery_state', function(msg) {
     document.getElementById('batteryCharge').innerHTML = msg.charge;
     document.getElementById('batteryPercentage').innerHTML = msg.percentage;
-    document.getElementById('batteryTemperature').innerHTML = msg.temperature;
+    document.getElementById('batteryVoltage').innerHTML = msg.voltage;
 });
 
 // Connection message from the server
