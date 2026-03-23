@@ -1,5 +1,20 @@
 from enum import Enum
 
+ROBOT_NAMESPACE = "myPanther"
+
+
+class Environment(Enum):
+    SIMULATION = "simulation"
+    ROBOT = ROBOT_NAMESPACE
+
+
+class EnvSimulation(Enum):
+    TELEOPERATION_TOPIC = "/cmd_vel"
+
+
+class EnvRobot(Enum):
+    TELEOPERATION_TOPIC = f"/{ROBOT_NAMESPACE}/cmd_vel"
+
 
 class TaskResult(Enum):
     UNKNOWN = 0
@@ -9,15 +24,15 @@ class TaskResult(Enum):
 
 
 COMMAND_VELOCITY = {
-    'KeyU': {'linearX': 0.5 ,'angularZ': 1.0},
-    'KeyI': {'linearX': 0.5 ,'angularZ': 0.0},
-    'KeyO': {'linearX': 0.5 ,'angularZ': -1.0},
-    'KeyJ': {'linearX': 0.0 ,'angularZ': 1.0},
-    'KeyK': {'linearX': 0.0 ,'angularZ': 0.0},
-    'KeyL': {'linearX': 0.0 ,'angularZ': -1.0},
-    'KeyM': {'linearX': -0.5 ,'angularZ': -1.0},
-    'Comma': {'linearX': -0.5 ,'angularZ': 1.0},
-    'Period': {'linearX': -0.5 ,'angularZ': 1.0},
+    'forwardLeft': {'linearX': 0.5 ,'angularZ': 1.0},
+    'forward': {'linearX': 0.5 ,'angularZ': 0.0},
+    'forwardRight': {'linearX': 0.5 ,'angularZ': -1.0},
+    'rotateLeft': {'linearX': 0.0 ,'angularZ': 1.0},
+    'stop': {'linearX': 0.0 ,'angularZ': 0.0},
+    'rotateRight': {'linearX': 0.0 ,'angularZ': -1.0},
+    'backwardLeft': {'linearX': -0.5 ,'angularZ': -1.0},
+    'backward': {'linearX': -0.5 ,'angularZ': 0.0},
+    'backwardRight': {'linearX': -0.5 ,'angularZ': 1.0},
 }
 
 INIT_POINT_LAT = 62.789252

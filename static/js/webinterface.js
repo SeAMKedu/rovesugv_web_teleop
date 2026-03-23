@@ -1,3 +1,6 @@
+const ROBOT_NAMESPACE = "myPanther";
+
+
 // Sleep for given amount of milliseconds
 async function sleep(time_ms) {
     await new Promise(resolve => setTimeout(resolve, time_ms));
@@ -155,14 +158,19 @@ async function onNavResult() {
     resetNavFeedback();
 };
 
-// Send a command velocity message to the server 
-function keypressListener(event) {
+// Send a command velocity message to the server
+function driveRobot(direction) {
     const controlSwitch = document.getElementById('switchManualControl');
+    const radioSimulation = document.getElementById('radioSimulation');
     if(controlSwitch.checked) {
-        socketio.emit('cmd_vel', event.code);
+        let env = radioSimulation.checked ? "simulation" : ROBOT_NAMESPACE;
+        let data = {
+            env: env,
+            direction: direction
+        };
+        socketio.emit('drive_robot', data);
     }
 };
-document.addEventListener('keypress', keypressListener);
 
 // Navigation
 const navTargets = {

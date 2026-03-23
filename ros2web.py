@@ -12,7 +12,7 @@ from nav2_msgs.action._navigate_to_pose import NavigateToPose_FeedbackMessage
 from sensor_msgs.msg import BatteryState, Imu, NavSatFix
 
 import config
-from utils import gps_utils, ros2_nodes
+from utils import gps_utils, monitoring
 
 bearing = 0.0
 lock = Lock()
@@ -125,7 +125,7 @@ def main():
 
     rclpy.init()
     
-    data_monitoring = ros2_nodes.DataMonitoring(
+    data_monitoring = monitoring.DataMonitoring(
         cb_batstate=callback_on_battery_state,
         cb_feedback=callback_on_nav_feedback,
         cb_imu=callback_on_imu_data,

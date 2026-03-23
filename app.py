@@ -6,7 +6,8 @@ from flask_socketio import SocketIO
 from geometry_msgs.msg import Twist
 
 import config
-from utils import ros2_nodes
+import models
+from utils.teleop import Teleoperation
 
 app = Flask(__name__)
 socketio = SocketIO(app)
@@ -56,16 +57,15 @@ def on_navsatfix(data):
 
 
 @socketio.event
-def cmd_vel(pressed_key: str):
-    """Receive velocity command data from a client."""
+def drive_robot(data: dict):
+    """Receive teleoperation command from a client."""
+    print(data)
     if not teleop:
         return
-    if not pressed_key in config.COMMAND_VELOCITY.keys():
+    command = models.DriveCommand(data['env'], data['direction'])
+    if not str(command.direction) in config.COMMAND_VELOCITY.keys():
         return
-    msg = Twist()
-    msg.linear.x = config.COMMAND_VELOCITY[pressed_key]['linearX']
-    msg.angular.z = config.COMMAND_VELOCITY[pressed_key]['angularZ']
-    teleop.teleoperate(msg)
+    teleop.teleoperate(command)
 
 
 def on_nav_result(result: config.TaskResult):
@@ -94,9 +94,9 @@ def nav_cancel():
 
 if __name__ == '__main__':
     rclpy.init()
-    teleop = ros2_nodes.TeleopWeb()
+    teleop = Teleoperation()
     try:
-        socketio.run(app, debug=True)
+        socketio.run(app, host="0.0.0.0", debug=True)
     except KeyboardInterrupt:
         pass
     finally:

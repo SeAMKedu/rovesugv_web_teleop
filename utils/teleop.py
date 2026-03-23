@@ -3,80 +3,29 @@ from typing import Callable
 import rclpy
 from geometry_msgs.msg import PoseStamped, Twist
 from geographic_msgs.msg import GeoPose
-from nav_msgs.msg import Path
-from nav2_msgs.action._navigate_to_pose import NavigateToPose_FeedbackMessage
 from nav2_simple_commander.robot_navigator import BasicNavigator
 from rclpy.node import Node
 from robot_localization.srv import FromLL
-from sensor_msgs.msg import BatteryState, Imu, NavSatFix
 
+import config
+import models
 from utils import gps_utils
 
 
-class DataMonitoring(Node):
-    """
-    Subscribe to ROS 2 topics and provide messages for a data monitoring app.
-
-    :param cb_batstate: Function to call when battery state message is received.
-    :param cb_feedback: Function to call when Nav2 feedback message is received.
-    :param cb_imu: Function to call when IMU data message is received.
-    :param cb_navsatfix: Function to call when satellite fix message is received.
-    :param cb_path: Function to call when path message is received.
-
-    """
-
-    def __init__(
-            self,
-            cb_batstate: Callable,
-            cb_feedback: Callable,
-            cb_imu: Callable,
-            cb_navsatfix: Callable,
-            cb_path: Callable,
-        ):
-        super().__init__(node_name='data_monitoring')
-
-        self.sub_battery = self.create_subscription(
-            msg_type=BatteryState,
-            topic='/panther/battery/battery_status',
-            callback=cb_batstate,
-            qos_profile=10,
-        )
-        self.sub_feedback = self.create_subscription(
-            msg_type=NavigateToPose_FeedbackMessage,
-            topic='/navigate_to_pose/_action/feedback',
-            callback=cb_feedback,
-            qos_profile=10,
-        )
-        self.sub_imu = self.create_subscription(
-            msg_type=Imu,
-            topic='/imu',
-            callback=cb_imu,
-            qos_profile=10,
-        )
-        self.sub_navsatfix = self.create_subscription(
-            msg_type=NavSatFix,
-            topic='/gps/fix',
-            callback=cb_navsatfix,
-            qos_profile=10,
-        )
-        self.sub_path = self.create_subscription(
-            msg_type=Path,
-            topic='/plan',
-            callback=cb_path,
-            qos_profile=10,
-        )
-        
-
-class TeleopWeb(Node):
+class Teleoperation(Node):
     """Teleoperate a robot using a web browser."""
 
     def __init__(self):
         super().__init__(node_name='teleop_web')
+        
+        self.topic_simu = config.EnvSimulation.TELEOPERATION_TOPIC.value
+        self.topic_robo = config.EnvRobot.TELEOPERATION_TOPIC.value
+
         self.navigator = BasicNavigator()
         self.srvclient = self.create_client(srv_type=FromLL, srv_name='/fromLL')
-        self.twist_pub = self.create_publisher(
+        self.teleop_publisher = self.create_publisher(
             msg_type=Twist,
-            topic='/cmd_vel',
+            topic=self.topic_simu,
             qos_profile=10,
         )
 
@@ -126,10 +75,25 @@ class TeleopWeb(Node):
         cb_result(self.navigator.getResult())
 
 
-    def teleoperate(self, msg: Twist):
-        """Teleoperate a rover.
+    def teleoperate(self, command: models.DriveCommand):
+        """Drive the rover.
 
-        :param msg: Twist message.
+        :param command: Drive command.
 
         """
-        self.twist_pub.publish(msg)
+        if command.env == config.Environment.SIMULATION.value:
+            if not self.teleop_publisher.topic == self.topic_simu:
+                self.teleop_publisher.destroy()
+                self.teleop_publisher = self.create_publisher(
+                    Twist, self.topic_simu, 10)
+        elif command.env == config.Environment.ROBOT.value:
+            if not self.teleop_publisher.topic == self.topic_robo:
+                self.teleop_publisher.destroy()
+                self.teleop_publisher = self.create_publisher(
+                    Twist, self.topic_robo, 10)
+        msg = Twist()
+        msg.linear.x = config.COMMAND_VELOCITY[command.direction]['linearX']
+        msg.angular.z = config.COMMAND_VELOCITY[command.direction]['angularZ']
+        
+        self.teleop_publisher.publish(msg)
+

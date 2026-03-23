@@ -66,7 +66,8 @@
                             <i class="fas fa-location-dot"></i> {% block locationTitle %}{% endblock %}
                         </h5>
                         <table class="table">
-                            <tbody class="table-group-divider">
+                            <hr>
+                            <tbody>
                                 <tr>
                                     <th scope="row">{% block locationLat %}{% endblock %}</th>
                                     <td><span id="locationLat"></span></td>
@@ -94,10 +95,11 @@
                             <i class="fas fa-car-battery"></i> {% block batteryTitle %}{% endblock %}
                         </h5>
                         <table class="table">
-                            <tbody class="table-group-divider">
+                            <hr>
+                            <tbody>
                                 <tr>
                                     <th scope="row">{% block batteryCharge %}{% endblock %} [Ah]</th>
-                                    <td><span id="batteryCharge"></span></td>
+                                    <td><span id="batteryCharge"></span>0</td>
                                 </tr>
                                 <tr>
                                     <th scope="row">{% block batteryPct %}{% endblock %}</th>
@@ -105,7 +107,7 @@
                                 </tr>
                                 <tr>
                                     <th scope="row">{% block batteryVoltage %}{% endblock %} [V]</th>
-                                    <td><span id="batteryVoltage"></span></td>
+                                    <td><span id="batteryVoltage"></span>0</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -121,26 +123,41 @@
                         <h5 class="card-title">
                             <i class="fas fa-keyboard"></i> {% block controlTitle %}{% endblock %}
                         </h5>
-                        <table class="table">
-                            <tbody class="table-group-divider">
-                                <tr>
-                                    <td><i class="fas fa-arrow-turn-up fa-rotate-270"></i> u</td>
-                                    <td><i class="fas fa-arrow-up"></i> i</td>
-                                    <td><i class="fas fa-arrow-turn-down fa-rotate-270"></i> o</td>
-                                </tr>
-                                <tr>
-                                    <td><i class="fas fa-arrow-rotate-left"></i> j</td>
-                                    <td><i class="fas fa-x"></i> k</td>
-                                    <td><i class="fas fa-arrow-rotate-right"></i> l</td>
-                                </tr>
-                                <tr>
-                                    <td><i class="fas fa-arrow-turn-down fa-rotate-90"></i> m</td>
-                                    <td><i class="fas fa-arrow-down"></i> ,</td>
-                                    <td><i class="fas fa-arrow-turn-up fa-rotate-90"></i> .</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                        <div class="form-check form-switch">
+                        <hr>
+                        <div>
+                            <button class="btn btn-primary btn-lg" type="button" onclick="driveRobot('forwardLeft')">
+                                <i class="fas fa-arrow-turn-up fa-rotate-270"></i>
+                            </button>
+                            <button class="btn btn-primary btn-lg" type="button" onclick="driveRobot('forward')">
+                                <i class="fas fa-arrow-up"></i>
+                            </button>
+                            <button class="btn btn-primary btn-lg" type="button" onclick="driveRobot('forwardRight')">
+                                <i class="fas fa-arrow-turn-down fa-rotate-270"></i>
+                            </button>
+                        </div>
+                        <div class="mt-2 mb-2">
+                            <button class="btn btn-primary btn-lg" type="button" onclick="driveRobot('rotateLeft')">
+                                <i class="fas fa-arrow-rotate-left"></i>
+                            </button>
+                            <button class="btn btn-primary btn-lg" type="button" onclick="driveRobot('stop')">
+                                <i class="fas fa-x"></i>
+                            </button>
+                            <button class="btn btn-primary btn-lg" type="button" onclick="driveRobot('rotateRight')">
+                                <i class="fas fa-arrow-rotate-right"></i>
+                            </button>
+                        </div>
+                        <div>
+                            <button class="btn btn-primary btn-lg" type="button" onclick="driveRobot('backwardLeft')">
+                                <i class="fas fa-arrow-turn-down fa-rotate-90"></i>
+                            </button>
+                            <button class="btn btn-primary btn-lg" type="button" onclick="driveRobot('backward')">
+                                <i class="fas fa-arrow-down"></i>
+                            </button>
+                            <button class="btn btn-primary btn-lg" type="button" onclick="driveRobot('backwardRight')">
+                                <i class="fas fa-arrow-turn-up fa-rotate-90"></i>
+                            </button>
+                        </div>
+                        <div class="form-check form-switch mt-2">
                             <input class="form-check-input" type="checkbox" role="switch" id="switchManualControl">
                             <label class="form-check-label" for="switchManualControl">{% block controlSwitch %}{% endblock %}</label>
                         </div>
@@ -151,6 +168,12 @@
         </div>
 
         <div class="row">
+
+            <!--Map-->
+            <div class="col-sm-7 mb-3">
+                <div id="map"></div>
+            </div>
+
             <div class="col-sm-5 mb-3">
 
                 <!--Navigation status, control, and feedback-->
@@ -160,7 +183,8 @@
                             <i class="fas fa-location-arrow"></i> {% block navTitle %}{% endblock %}
                         </h5>
                         <table class="table">
-                            <tbody class="table-group-divider">
+                            <hr>
+                            <tbody>
                                 <tr>
                                     <th scope="row">{% block navStatus %}{% endblock %}</th>
                                     <td><span id="navStatus"></span></td>
@@ -190,9 +214,11 @@
                             <div class="col-auto">
                                 <select class="form-select" onmousedown="this.value='';" onchange="setNavGoal(this.value);" id="inputNavTarget">
                                     <option value="mapClick">{% block navTarget1 %}{% endblock %}</option>
-                                    <option value="automotiveLab">{% block navTarget2 %}{% endblock %}</option>
-                                    <option value="manufacturingLab">{% block navTarget3 %}{% endblock %}</option>
-                                    <option value="roboticsLab">{% block navTarget4 %}{% endblock %}</option>
+                                    <option value="autoLab">{% block navTarget2 %}{% endblock %}</option>
+                                    <option value="mnfgLab">{% block navTarget3 %}{% endblock %}</option>
+                                    <option value="roboLab">{% block navTarget4 %}{% endblock %}</option>
+                                    <option value="robo2auto">Robo -> Auto Lab</option>
+                                    <option value="auto2robo">Auto -> Robo Lab</option>
                                 </select>
                             </div>
                         </div>
@@ -201,29 +227,24 @@
                     </div>
                 </div>
                 
-                <!--Target system: simulation or real rover-->
+                <!--Environment: simulation or real robot-->
                 <div class="card mt-3">
                     <div class="card-body">
-                        <h5 class="card-title"><i class="fas fa-gear"></i> {% block targetSystem %}{% endblock %}</h5>
+                        <h5 class="card-title"><i class="fas fa-gear"></i> {% block environment %}{% endblock %}</h5>
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" name="systemOption" id="systemOption1" checked>
-                            <label class="form-check-label" for="systemOption1">
-                                {% block targetSimulation %}{% endblock %}
+                            <input class="form-check-input" type="radio" name="systemOption" id="radioEnvSimu" checked>
+                            <label class="form-check-label" for="radioEnvSimu">
+                                {% block envSimulation %}{% endblock %}
                             </label>
                         </div>
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" name="systemOption" id="systemOption2">
-                            <label class="form-check-label" for="systemOption2">
+                            <input class="form-check-input" type="radio" name="systemOption" id="radioEnvRobo">
+                            <label class="form-check-label" for="radioEnvRobo">
                                 Panther
                             </label>
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <!--Map-->
-            <div class="col-sm-7 mb-3">
-                <div id="map"></div>
             </div>
 
         </div>
