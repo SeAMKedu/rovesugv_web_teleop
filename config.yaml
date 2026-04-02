@@ -7,7 +7,7 @@ topic:
     sim:
     robot: /panther/battery/battery_status
   odom:
-    sim: /odom
+    sim: /odometry/global
     robot: /fixposition/odometry_enu_smooth
   nav_feedback:
     sim: /navigate_to_pose/_action/feedback
