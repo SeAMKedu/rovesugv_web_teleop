@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 
 @dataclass
-class DriveCommand:
-    env: str
-    direction: str
+class GPSWaypoint:
+    latitude: float
+    longitude: float
+    yaw: float

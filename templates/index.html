@@ -30,9 +30,12 @@
             </button>
             <div class="collapse navbar-collapse" id="topnav">
                 <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="">Environment: {{ env }}</a>
+                    </li>
                     <!--Language selection-->
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <a class="nav-link active dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fas fa-language"></i> Language
                         </a>
                         <ul class="dropdown-menu">
@@ -42,7 +45,7 @@
                     </li>
                     <!--Theme selection-->
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <a class="nav-link active dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fas fa-palette"></i> Theme
                         </a>
                         <ul class="dropdown-menu">
@@ -57,10 +60,120 @@
 
     <div class="container" data-bs-theme="light">
         <div class="row mt-3">
-            
+            <!--Navigation status, control, and feedback-->
+            <div class="col-lg mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-location-arrow"></i> {% block navTitle %}{% endblock %}
+                        </h5>
+                        <table class="table">
+                            <hr>
+                            <tbody>
+                                <tr>
+                                    <th scope="row">{% block navStatus %}{% endblock %}</th>
+                                    <td><pre><span id="navStatus"></span></pre></td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">{% block navTimeRem %}{% endblock %} [s]</th>
+                                    <td><span id="navTimeRem"></span></td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">{% block navDistRem %}{% endblock %} [m]</th>
+                                    <td><span id="navDistRem"></span></td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">{% block navNavTime %}{% endblock %} [s]</th>
+                                    <td><span id="navNavTime"></span></td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">{% block navNumRecs %}{% endblock %}</th>
+                                    <td><span id="navNumRecs"></span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="row mb-3">
+                            <div class="col-auto">
+                                <label for="inputNavGoal" class="col-form-label"><b>{% block navTarget %}{% endblock %}</b></label>
+                            </div>
+                            <div class="col-auto">
+                                <select class="form-select" onmousedown="this.value='';" onchange="setNavGoal(this.value);" id="inputNavGoal">
+                                    <option value="mapClick">{% block navTarget1 %}{% endblock %}</option>
+                                    <option value="mfgLab">{% block navTarget3 %}{% endblock %}</option>
+                                    <option value="roboLab">{% block navTarget4 %}{% endblock %}</option>
+                                    <option value="robo2auto">Robo -> Auto Lab</option>
+                                    <option value="auto2robo">Auto -> Robo Lab</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button class="btn btn-success" type="button" onclick="navStart();" id="navStart">{% block navStartButton %}{% endblock %}</button>
+                        <button class="btn btn-danger" type="button" onclick="navStop();">{% block navStopButton %}{% endblock %}</button>
+                    </div>
+                </div>
+            </div>
+
+            <!--Map-->
+            <div class="col-lg-7 mb-3">
+                <div id="map"></div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!--Teleoperation-->
+            <div class="col-sm-5 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-gamepad"></i> {% block teleopTitle %}{% endblock %}
+                        </h5>
+                        <hr>
+                        <div>
+                            <button class="btn btn-primary btn-lg" type="button" id="teleop1">
+                                <i class="fas fa-arrow-turn-up fa-rotate-270"></i>
+                            </button>
+                            <button class="btn btn-primary btn-lg" type="button" id="teleop2">
+                                <i class="fas fa-arrow-up"></i>
+                            </button>
+                            <button class="btn btn-primary btn-lg" type="button" id="teleop3">
+                                <i class="fas fa-arrow-turn-down fa-rotate-270"></i>
+                            </button>
+                        </div>
+                        <div class="mt-2 mb-2">
+                            <button class="btn btn-primary btn-lg" type="button" id="teleop4">
+                                <i class="fas fa-arrow-rotate-left"></i>
+                            </button>
+                            <button class="btn btn-primary btn-lg" type="button" id="teleop5">
+                                <i class="fas fa-x"></i>
+                            </button>
+                            <button class="btn btn-primary btn-lg" type="button" id="teleop6">
+                                <i class="fas fa-arrow-rotate-right"></i>
+                            </button>
+                        </div>
+                        <div>
+                            <button class="btn btn-primary btn-lg" type="button" id="teleop7">
+                                <i class="fas fa-arrow-turn-down fa-rotate-90"></i>
+                            </button>
+                            <button class="btn btn-primary btn-lg" type="button" id="teleop8">
+                                <i class="fas fa-arrow-down"></i>
+                            </button>
+                            <button class="btn btn-primary btn-lg" type="button" id="teleop9">
+                                <i class="fas fa-arrow-turn-up fa-rotate-90"></i>
+                            </button>
+                        </div>
+                        <div class="form-check form-switch mt-2">
+                            <input class="form-check-input" type="checkbox" role="switch" id="teleopSwitch" onchange="disableTeleopButtons(!this.checked)" switch>
+                            <label class="form-check-label" for="teleopSwitch">
+                                {% block teleopSwitch %}{% endblock %}
+                            </label>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
             <!--Location information-->
-            <div class="col-sm mb-3">
-                <div class="card">
+            <div class="col-sm-4 mb-3">
+                <div class="card h-100">
                     <div class="card-body">
                         <h5 class="card-title">
                             <i class="fas fa-location-dot"></i> {% block locationTitle %}{% endblock %}
@@ -88,8 +201,8 @@
             </div>
             
             <!--Battery status-->
-            <div class="col-sm mb-3">
-                <div class="card">
+            <div class="col-sm-3 mb-3">
+                <div class="card h-100">
                     <div class="card-body">
                         <h5 class="card-title">
                             <i class="fas fa-car-battery"></i> {% block batteryTitle %}{% endblock %}
@@ -115,141 +228,23 @@
                     </div>
                 </div>
             </div>
-            
-            <!--Manual control-->
-            <div class="col-sm mb-3">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="fas fa-keyboard"></i> {% block controlTitle %}{% endblock %}
-                        </h5>
-                        <hr>
-                        <div>
-                            <button class="btn btn-primary btn-lg" type="button" onclick="driveRobot('forwardLeft')">
-                                <i class="fas fa-arrow-turn-up fa-rotate-270"></i>
-                            </button>
-                            <button class="btn btn-primary btn-lg" type="button" onclick="driveRobot('forward')">
-                                <i class="fas fa-arrow-up"></i>
-                            </button>
-                            <button class="btn btn-primary btn-lg" type="button" onclick="driveRobot('forwardRight')">
-                                <i class="fas fa-arrow-turn-down fa-rotate-270"></i>
-                            </button>
-                        </div>
-                        <div class="mt-2 mb-2">
-                            <button class="btn btn-primary btn-lg" type="button" onclick="driveRobot('rotateLeft')">
-                                <i class="fas fa-arrow-rotate-left"></i>
-                            </button>
-                            <button class="btn btn-primary btn-lg" type="button" onclick="driveRobot('stop')">
-                                <i class="fas fa-x"></i>
-                            </button>
-                            <button class="btn btn-primary btn-lg" type="button" onclick="driveRobot('rotateRight')">
-                                <i class="fas fa-arrow-rotate-right"></i>
-                            </button>
-                        </div>
-                        <div>
-                            <button class="btn btn-primary btn-lg" type="button" onclick="driveRobot('backwardLeft')">
-                                <i class="fas fa-arrow-turn-down fa-rotate-90"></i>
-                            </button>
-                            <button class="btn btn-primary btn-lg" type="button" onclick="driveRobot('backward')">
-                                <i class="fas fa-arrow-down"></i>
-                            </button>
-                            <button class="btn btn-primary btn-lg" type="button" onclick="driveRobot('backwardRight')">
-                                <i class="fas fa-arrow-turn-up fa-rotate-90"></i>
-                            </button>
-                        </div>
-                        <div class="form-check form-switch mt-2">
-                            <input class="form-check-input" type="checkbox" role="switch" id="switchManualControl">
-                            <label class="form-check-label" for="switchManualControl">{% block controlSwitch %}{% endblock %}</label>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
         </div>
-
-        <div class="row">
-
-            <!--Map-->
-            <div class="col-sm-7 mb-3">
-                <div id="map"></div>
-            </div>
-
-            <div class="col-sm-5 mb-3">
-
-                <!--Navigation status, control, and feedback-->
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="fas fa-location-arrow"></i> {% block navTitle %}{% endblock %}
-                        </h5>
-                        <table class="table">
-                            <hr>
-                            <tbody>
-                                <tr>
-                                    <th scope="row">{% block navStatus %}{% endblock %}</th>
-                                    <td><span id="navStatus"></span></td>
-                                </tr>
-                                <tr>
-                                    <th scope="row">{% block navTimeRem %}{% endblock %} [s]</th>
-                                    <td><span id="navTimeRem"></span></td>
-                                </tr>
-                                <tr>
-                                    <th scope="row">{% block navDistRem %}{% endblock %} [m]</th>
-                                    <td><span id="navDistRem"></span></td>
-                                </tr>
-                                <tr>
-                                    <th scope="row">{% block navNavTime %}{% endblock %} [s]</th>
-                                    <td><span id="navNavTime"></span></td>
-                                </tr>
-                                <tr>
-                                    <th scope="row">{% block navNumRecs %}{% endblock %}</th>
-                                    <td><span id="navNumRecs"></span></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                        <div class="row mb-3">
-                            <div class="col-auto">
-                                <label for="inputNavTarget" class="col-form-label"><b>{% block navTarget %}{% endblock %}</b></label>
-                            </div>
-                            <div class="col-auto">
-                                <select class="form-select" onmousedown="this.value='';" onchange="setNavGoal(this.value);" id="inputNavTarget">
-                                    <option value="mapClick">{% block navTarget1 %}{% endblock %}</option>
-                                    <option value="autoLab">{% block navTarget2 %}{% endblock %}</option>
-                                    <option value="mnfgLab">{% block navTarget3 %}{% endblock %}</option>
-                                    <option value="roboLab">{% block navTarget4 %}{% endblock %}</option>
-                                    <option value="robo2auto">Robo -> Auto Lab</option>
-                                    <option value="auto2robo">Auto -> Robo Lab</option>
-                                </select>
-                            </div>
-                        </div>
-                        <button class="btn btn-success" type="button" onclick="navStart();" id="navStart">{% block navStartButton %}{% endblock %}</button>
-                        <button class="btn btn-danger" type="button" onclick="navCancel();">{% block navStopButton %}{% endblock %}</button>
-                    </div>
-                </div>
-                
-                <!--Environment: simulation or real robot-->
-                <div class="card mt-3">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="fas fa-gear"></i> {% block environment %}{% endblock %}</h5>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="systemOption" id="radioEnvSimu" checked>
-                            <label class="form-check-label" for="radioEnvSimu">
-                                {% block envSimulation %}{% endblock %}
-                            </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="systemOption" id="radioEnvRobo">
-                            <label class="form-check-label" for="radioEnvRobo">
-                                Panther
-                            </label>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
+        <footer class="text-center">
+            <p>Icons by Fontawesome</p>
+            <a href="https://fontawesome.com/icons/link?f=classic&s=solid">link</a>
+            <a href="https://fontawesome.com/icons/link-slash?f=classic&s=solidlink-slash">link-slash</a>
+            <a href="https://fontawesome.com/icons/language?f=classic&s=solid">language</a>
+            <a href="https://fontawesome.com/icons/palette?f=classic&s=solid">palette</a>
+            <a href="https://fontawesome.com/icons/location-arrow?f=classic&s=solid">location-arrow</a>
+            <a href="https://fontawesome.com/icons/gamepad?f=classic&s=solid">gamepad</a>
+            <a href="https://fontawesome.com/icons/location-dot?f=classic&s=solid">location-dot</a>
+            <a href="https://fontawesome.com/icons/car-battery?f=classic&s=solid">car-battery</a>
+        </footer>
     </div>
 
-    <script src="/static/js/webinterface.js" type="text/javascript"></script>
+
+
+    <script src="/static/js/scripts.js" type="text/javascript"></script>
 </body>
 </html>

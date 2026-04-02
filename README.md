@@ -1,9 +1,11 @@
 ![hankelogo](/images/rovesugv_logo.png)
 
 # rovesugv_web_teleop
-Verkkosovellus, jolla voi etäoperoida oikeaa tai simuloitua mobiilirobottia
+Verkkosovellus, jolla voi etäoperoida simuloitua mobiilirobottia tai Husarion Panther -mobiilirobottia.
 
-Status: toimii toistaiseksi vain simuloidun robotin kanssa
+![gui](/images/rovesugv_web_teleop.png)
+
+
 
 ## Ohjelmistoriippuvuudet
 
@@ -18,21 +20,29 @@ $ sudo apt install ros-humble-nav2-bringup
 ## How to
 Simulaattori on saatavilla osoitteessa [https://github.com/SeAMKedu/rovesugv_navsim](https://github.com/SeAMKedu/rovesugv_navsim).
 
+ROS 2 -paketti Husarion Panther -mobiilirobotin GPS-navigointiin on puolestaan saatavilla osoitteessa [https://github.com/SeAMKedu/rovesugv_gps_nav](https://github.com/SeAMKedu/rovesugv_gps_nav).
+
+Aseta ajoympäristö [config.yaml](/config.yaml) tiedoston **env**-avaimessa:
+* sim: simulaattorissa toimiva mobiilirobotti
+* robot: fyysinen Husarion Panther -mobiilirobotti
+
 Käynnistä ensimmäisessä terminaalissa verkkopalvelin alla olevilla komennoilla.
 ```
 $ cd rovesugv_web_teleop
 $ source env/bin/activate
-$ python app.py
+$ python3 app.py
 ```
 
 Käynnistä toisessa terminaalissa ROS 2 -sovellus alla olevilla komennoilla.
 ```
 $ cd rovesugv_web_teleop
 $ source env/bin/activate
-$ python ros2web.py
+$ python3 ros2web.py
 ```
 
-Mene selaimella osoitteeseen [http://127.0.0.1:5000](http://127.0.0.1:5000).
+Mene sitten selaimella osoitteeseen [http://127.0.0.1:5000](http://127.0.0.1:5000). 
+
+Sovellus on testattu toimivan myös mobiililaitteen verkkoselaimen avulla. Mobiililaiteen ja tietokoneen, jolla verkkosovellusta ajetaan, on tällöin oltava samassa aliverkossa.
 
 ## Tekijätiedot
 
