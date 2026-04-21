@@ -1,35 +1,39 @@
 {% extends "index.html" %}
 
+{% block connection %}Yhteys{% endblock %}
+
+{% block envSimulation %}Simulaatio{% endblock %}
+{% block language %}Kieli{% endblock %}
+{% block theme %}Teema{% endblock %}
 {% block themeDark %}Tumma{% endblock %}
-{% block themeLigth %}Vaalea{% endblock %}
+{% block themeLight %}Vaalea{% endblock %}
+
+{% block navTitle %}Navigaatio{% endblock %}
+{% block navSubtitleTarget %}Kohteen/reitin valinta{% endblock %}
+{% block navTargetClickMap %}Klikkaa karttaa{% endblock %}
+{% block navTargetMaptLab %}Kone- ja tuotantotekniikan labra{% endblock %}
+{% block navTargetRoboLab %}Robotiikan labra{% endblock %}
+{% block navSubtitleYaw %}Kääntökulma (yaw){% endblock %}
+{% block navSubtitleControl %}Hallinta{% endblock %}
+{% block navStopButton %}Keskeytä{% endblock %}
+{% block navResetButton %}Tyhjennä{% endblock %}
+{% block navStartButton %}Aloita{% endblock %}
+{% block navSubtitleProgress %}Edistyminen{% endblock %}
+{% block navSubtitleFeedback %}Palaute{% endblock %}
+{% block navStatus %}Tila{% endblock %}
+{% block navNavTime %}Navigointiaika{% endblock %}
+{% block navTimeRem %}Aikaa jäljellä{% endblock %}
+{% block navDistRem %}Matkaa jäljellä{% endblock %}
+{% block navNumRecs %}Palautumiset{% endblock %}
+
+{% block teleopTitle %}Teleoperointi{% endblock %}
+{% block teleopSpeed %}Nopeus{% endblock %}
 
 {% block locationTitle %}Sijainti{% endblock %}
-{% block locationLat %}Leveyspiiri{% endblock %}
-{% block locationLon %}Pituuspiiri{% endblock %}
+{% block locationLat %}Pituusaste{% endblock %}
+{% block locationLon %}Leveysaste{% endblock %}
 {% block locationAlt %}Korkeus{% endblock %}
 {% block locationButton %}Näytä kartalla{% endblock %}
 
-{% block batteryTitle %}Akku{% endblock %}
-{% block batteryCharge %}Varaus{% endblock %}
-{% block batteryPct %}Prosenttiosuus{% endblock %}
-{% block batteryVoltage %}Voltit{% endblock %}
-{% block batteryButton %}Mene lataukseen{% endblock %}
-
-{% block teleopTitle %}Etäohjaus{% endblock %}
-{% block teleopSwitch %}Ota käyttöön{% endblock %}
-
-{% block navTitle %}Navigointi{% endblock %}
-{% block navStatus %}Tila{% endblock %}
-{% block navTimeRem %}Aikaa jäljellä{% endblock %}
-{% block navDistRem %}Matkaa jäljellä{% endblock %}
-{% block navNavTime %}Navigointiaika{% endblock %}
-{% block navNumRecs %}Toipumiset{% endblock %}
-{% block navTarget %}Kohde tai reitti{% endblock %}
-{% block navTarget1 %}Klikkaa karttaa{% endblock %}
-{% block navTarget2 %}Autolabra{% endblock %}
-{% block navTarget3 %}Tuotantotekniikan labra{% endblock %}
-{% block navTarget4 %}Robotiikan labra{% endblock %}
-{% block navStartButton %}Aloita{% endblock %}
-{% block navStopButton %}Seis{% endblock %}
-{% block environment %}Ajoympäristö{% endblock %}
-{% block envSimulation %}Simulaatio{% endblock %}
+{% block telemetryTitle %}Telemetria{% endblock %}
+{% block telemetrySubtitleBattery %}Akku{% endblock %}

@@ -1,178 +1,260 @@
-//============================================================================
-// Utility functions
-//============================================================================
+//----------------------------------------------------------------------------
+// General
+//----------------------------------------------------------------------------
+function setTheme(theme) {
+    document.documentElement.setAttribute("data-bs-theme", theme);
+};
+
 async function sleep(time_ms) {
     await new Promise(resolve => setTimeout(resolve, time_ms));
 }
 
-// Set the theme of the web page
-function setTheme(theme) {
-    const collection = document.getElementsByClassName("container");
-    collection[0].setAttribute("data-bs-theme", theme);
+
+//----------------------------------------------------------------------------
+// SocketIO
+//----------------------------------------------------------------------------
+const connIcon = document.getElementById("connIcon");
+const connStatus = document.getElementById("connStatus");
+const alertPlaceholder = document.getElementById("alertPlaceholder");
+const appendAlert = (message, type) => {
+    const wrapper = document.createElement("div");
+    wrapper.innerHTML = [
+        `<div class="alert alert-${type} alert-dismissible" role="alert">`,
+        `   <div>${message}</div>`,
+        '   <button type="button" class="btn-close" id="alertClose" data-bs-dismiss="alert" aria-label="Close"></button>',
+        '</div>'
+    ].join("");
+    alertPlaceholder.append(wrapper);
 };
 
+let socketio = io();
 
-//===================================================================
+socketio.on("alert", function(alertMessage) {
+    console.log(alertMessage);
+    appendAlert(alertMessage.msg, alertMessage.type);
+});
+
+socketio.on("connection", function(msg) {
+    connIcon.classList.remove("fa-link-slash");
+    connIcon.classList.add("fa-link");
+    connStatus.classList.add("active");
+    const alertClose = document.getElementById("alertClose");
+    if (alertClose) {
+        alertClose.click();
+    }
+    socketio.on("disconnect", function() {
+        connIcon.classList.remove("fa-link");
+        connIcon.classList.add("fa-link-slash");
+        connStatus.classList.remove("active");
+        //appendAlert("Connection to server lost", "danger");
+    });
+});
+
+
+//----------------------------------------------------------------------------
 // Leaflet
-//===================================================================
-var roverLat = 62.789252;
-var roverLon = 22.821627;
-var defaultZoom = 19;
+//----------------------------------------------------------------------------
+let mapZoom = 17;
+let roverLat = 62.789252;
+let roverLon = 22.821627;
 
-var map = L.map("map", {
-    center: [roverLat, roverLon],
-    zoom: defaultZoom
-});
+let map = L.map("map", {}).setView([roverLat, roverLon], 17);
 
-map.setView([roverLat, roverLon], defaultZoom);
-
-// Custom icons of the map markers
-var roverIcon = L.icon({
-    iconUrl: "/static/img/rover.png",
-    shadowUrl: "/static/img/shadow.png",
-    iconSize: [30, 30],
-    shadowSize: [30, 30],
-    iconAnchor: [15, 15],
-    shadowAnchor: [15, 15],
-    popupAnchor: [-5, -75]
-});
-
-var navTargetIcon = L.icon({
-    iconUrl: "/static/img/goal.png",
-    iconSize: [25, 41],
-    iconAnchor: [10, 40],
-    popupAnchor: [0, 0],
-    shadowUrl: "",
-    shadowSize: [0, 0],
-    shadowAnchor: [0, 0]
-});
-
-// Custom marker for the rover
-var roverMarker = L.marker([roverLat, roverLon], {icon: roverIcon});
-
-var goalMarkerGroup = L.layerGroup();
-map.addLayer(goalMarkerGroup);
-
-// Arrow that shows the orientation of the rover
-var arrow = L.polyline([
+let roverArrow = L.polyline([
     [roverLat, roverLon],
-    [62.78925199996589, 22.82172496665635]
-]).arrowheads();
-arrow.addTo(map);
+    [roverLat - 0.000001, roverLon - 0.000002]
+]).arrowheads().addTo(map);
 
-// Polyline that shows the planned path of the rover during navigation
-var plannedPath = L.polyline([]);
+let roverIcon = L.icon({
+    iconUrl: "/static/img/rover.png",
+    iconSize: [30, 30],
+});
+
+let roverMarker = L.marker(
+    [roverLat, roverLon], 
+    {icon: roverIcon}
+).addTo(map);
+
+let navIconStart = L.icon({
+    iconUrl: "/static/img/navStart.png",
+    iconSize: [34, 34]
+});
+
+let navIconGoal = L.icon({
+    iconUrl: "/static/img/navGoal.png",
+    iconSize: [36, 35]
+});
+
+let navIconLayer = L.layerGroup();
+let navWaypoints = L.polyline([]);
+let plannedPath = L.polyline([], {color: "red"});
 
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 }).addTo(map);
 
-
-// Draw an arrow that shows the orientation of the rover
-function setRoverOrientationArrow(msg) {
-    arrow.remove();
-    arrow = L.polyline([
-        [msg.lat, msg.lon], 
-        [msg.arrow_head.lat, msg.arrow_head.lon]
-    ]).arrowheads();
-    arrow.addTo(map);
+function clearMap() {
+    navIconLayer.clearLayers();
+    navWaypoints.remove();
 };
 
-
-// Set the center of the map view
-function setMapView() {
-    map.setView([roverLat, roverLon], defaultZoom);
+function showNavIcon(latitude, longitude, navIcon) {
+    let location = L.latLng(latitude, longitude);
+    L.marker(location, {icon: navIcon}).addTo(navIconLayer);
 };
 
+map.addLayer(navIconLayer);
 
-// Set the location of the marker on the map
-function setRoverMarkerLocation(geoPoint) {
-    roverMarker.setLatLng([geoPoint.lat, geoPoint.lon]).addTo(map);
+map.on("click", function(event) {
+    if (isNavActive) {
+        return;
+    }
+    if (navSelect.value === "mapPoint") {
+        clearMap();
+        showNavIcon(roverLat, roverLon, navIconStart);
+        showNavIcon(event.latlng.lat, event.latlng.lng, navIconGoal);
+        navGoal = {
+            goal: "mapPoint",
+            latitude: event.latlng.lat,
+            longitude: event.latlng.lng,
+            yaw: yawToRadians()
+        };
+    }
+});
+
+//----------------------------------------------------------------------------
+// Navigation
+//----------------------------------------------------------------------------
+const yawArrow = document.getElementById("yawArrow");
+const yawInput = document.getElementById("yawInput");
+const yawOutput = document.getElementById("yawOutput");
+const navSelect = document.getElementById("navSelect");
+const navResetBtn = document.getElementById("navResetBtn");
+const navStartBtn = document.getElementById("navStartBtn");
+const navStatus = document.getElementById("navStatus");
+const navNavTime = document.getElementById("navNavTime");
+const navTimeRem = document.getElementById("navTimeRem");
+const navDistRem = document.getElementById("navDistRem");
+const navNumRecs = document.getElementById("navNumRecs");
+let isNavActive;
+let navGoal = {};
+
+yawOutput.textContent = yawInput.value;
+
+yawInput.addEventListener("input", function() {
+    yawArrow.style.transform = `rotate(${-this.value}deg)`;
+    yawOutput.textContent = this.value;
+    navGoal.yaw = parseInt(yawInput.value);
+});
+
+function disableElements(isDisabled) {
+    navSelect.disabled = isDisabled;
+    yawInput.disabled = isDisabled;
+    navResetBtn.disabled = isDisabled;
+    navStartBtn.disabled = isDisabled;
+    teleopSwitch.disabled = isDisabled;
 };
-
-
-//===================================================================
-// SocketIO
-//===================================================================
-var socketio = io();
-
-// Show the battery information of the rover
-socketio.on("battery_state", function(msg) {
-    document.getElementById("batteryCharge").innerHTML = msg.charge;
-    document.getElementById("batteryPercentage").innerHTML = msg.percentage;
-    document.getElementById("batteryVoltage").innerHTML = msg.voltage;
-});
-
-// Connection message from the server
-socketio.on("connection", function(msg) {
-    const iconElem = document.getElementById("sioConnIcon");
-    const spanElem = document.getElementById("sioConnColor");
-    iconElem.classList.remove("fa-link-slash");
-    iconElem.classList.add("fa-link");
-    spanElem.style["color"] = "green";
-    socketio.on("disconnect", function() {
-        iconElem.classList.remove("fa-link");
-        iconElem.classList.add("fa-link-slash");
-        spanElem.style["color"] = "crimson";
-    });
-});
-
-// Show the location information of the rover
-socketio.on("navsatfix", function(msg) {
-    document.getElementById("locationLat").innerHTML = msg.lat;
-    document.getElementById("locationLon").innerHTML = msg.lon;
-    document.getElementById("locationAlt").innerHTML = msg.alt;
-    roverLat = msg.lat;
-    roverLon = msg.lon;
-    setRoverMarkerLocation(msg);
-    setRoverOrientationArrow(msg);
-});
-
-// Show the feedback of the navigation task
-socketio.on("nav_feedback", function(msg) {
-    document.getElementById("navTimeRem").innerHTML = msg.estimated_time_remainging;
-    document.getElementById("navDistRem").innerHTML = msg.distance_remaining;
-    document.getElementById("navNavTime").innerHTML = msg.navigation_time;
-    document.getElementById("navNumRecs").innerHTML = msg.number_of_recoveries;
-});
-
-// Show the planned path of the navigation task
-socketio.on("nav_path", function(msg) {
-    plannedPath.remove();
-    plannedPath = L.polyline(msg.path, {color: "green"});
-    plannedPath.addTo(map);
-});
-
-// Show the result of the navigation task
-socketio.on("nav_result", function(msg) {
-    document.getElementById("navStatus").innerHTML = msg;
-    onNavResult();
-});
 
 async function onNavResult() {
     await sleep(5000);
+    navStatus.innerHTML = "PENDING";
+
     plannedPath.remove();
-    goalMarkerGroup.clearLayers();
-    resetNavFeedback();
+    clearMap();
+    disableElements(false);
+    yawInput.value = 0;
+    yawOutput.textContent = yawInput.value;
+    navNavTime.innerHTML = 0.0;
+    navTimeRem.innerHTML = 0.0;
+    navDistRem.innerHTML = 0.0;
+    navNumRecs.innerHTML = 0;
 };
 
-//============================================================================
-// Teleoperation
-//============================================================================
-const linearSpeed = 0.5;
-const angularSpeed = 0.5;
-const speeds = {
-    forwardL: {linear: linearSpeed, angular: angularSpeed},
-    forward: {linear: linearSpeed, angular: 0.0},
-    forwardR: {linear: linearSpeed, angular: -angularSpeed},
-    rotateL: {linear: 0.0, angular: angularSpeed},
-    stop: {linear: 0.0, angular: 0.0},
-    rotateR: {linear: 0.0, angular: -angularSpeed},
-    backwardL: {linear: -linearSpeed, angular: -angularSpeed},
-    backward: {linear: -linearSpeed, angular: 0.0},
-    backwardR: {linear: -linearSpeed, angular: angularSpeed},
+function stopNav() {
+    clearMap();
+    disableElements(false);
+    disableTeleop(false);
+    socketio.emit("stop_navigation");
 };
+
+function resetNav() {
+    if (isNavActive) {
+        return;
+    }
+    clearMap();
+    let navGoal = "";
+    yawInput.value = 0;
+    yawArrow.style.transform = `rotate(0deg)`;
+    yawOutput.textContent = yawInput.value;
+};
+
+function startNav() {
+    if (isNavActive) {
+        appendAlert("Navigation is already running", "danger");
+        return;
+    }
+    disableElements(true);
+    disableTeleop(true);
+    navStatus.innerHTML = "ACTIVE";
+    socketio.emit("start_navigation", navGoal);
+};
+
+function setNavGoal(selectedGoal) {
+    clearMap();
+    navGoal = {goal: selectedGoal};
+    if (selectedGoal === "mapPoint") {
+        navGoal.yaw = parseInt(yawInput.value);
+        return;
+    }
+    socketio.emit("get_waypoints", selectedGoal);
+};
+
+function yawToRadians() {
+    return parseInt(yawInput.value) * Math.PI / 180;
+};
+
+socketio.on("nav_feedback", function(msg) {
+    navNavTime.innerHTML = msg.navigation_time;
+    navTimeRem.innerHTML = msg.estimated_time_remainging;
+    navDistRem.innerHTML = msg.distance_remaining;
+    navNumRecs.innerHTML = msg.number_of_recoveries;
+});
+
+socketio.on("nav_path", function(msg) {
+    plannedPath.setLatLngs(msg.path).addTo(map);
+});
+
+socketio.on("nav_result", function(msg) {
+    navStatus.innerHTML = msg;
+    onNavResult();
+});
+
+socketio.on("nav_status", function(navigation_status) {
+    isNavActive = navigation_status;
+});
+
+socketio.on("nav_waypoints", function(waypoints) {
+    let startPoint = waypoints[0];
+    let goalPoint = waypoints[waypoints.length-1];
+    navWaypoints.remove();
+    navWaypoints = L.polyline(waypoints, {color: "green"}).arrowheads({
+        frequency: "50px",
+        size: "10px"
+    }).addTo(map);
+    if (startPoint === goalPoint) {
+        showNavIcon(roverLat, roverLon, navIconStart);
+    } else {
+        showNavIcon(startPoint[0], startPoint[1], navIconStart);
+    }
+    showNavIcon(goalPoint[0], goalPoint[1], navIconGoal);
+});
+
+//----------------------------------------------------------------------------
+// Teleop
+//----------------------------------------------------------------------------
+const teleopStatus = document.getElementById("teleopStatus");
+const teleopSwitch = document.getElementById("teleopSwitch");
 
 const teleopButton1 = document.getElementById("teleop1");
 const teleopButton2 = document.getElementById("teleop2");
@@ -183,11 +265,95 @@ const teleopButton6 = document.getElementById("teleop6");
 const teleopButton7 = document.getElementById("teleop7");
 const teleopButton8 = document.getElementById("teleop8");
 const teleopButton9 = document.getElementById("teleop9");
-const teleopSwitch = document.getElementById("teleopSwitch");
+
+const teleopSpeedBtnMinus = document.getElementById("teleopSpeedBtnMinus");
+const teleopSpeed = document.getElementById("teleopSpeed");
+const teleopSpeedBtnPlus = document.getElementById("teleopSpeedBtnPlus");
 
 const teleopTimeout = 500; // in milliseconds
-let teleopTimer = null;
+const roverSpeedMin = 0.5;
+const roverSpeedMax = 2.0;
+const angularSpeed = 0.5;
 
+let roverSpeed = 0.5;
+
+disableTeleop(true);
+
+function disableTeleop(isDisabled) {
+    let teleopButtons = [
+        teleopButton1, teleopButton2, teleopButton3,
+        teleopButton4, teleopButton5, teleopButton6,
+        teleopButton7, teleopButton8, teleopButton9,
+        teleopSpeedBtnMinus, teleopSpeedBtnPlus
+    ]
+    for (let i=0; i<teleopButtons.length; i++) {
+        teleopButtons[i].disabled = isDisabled;
+    }
+};
+
+function getRoverSpeed(direction, linearSpeed) {
+    let speeds = {
+        forwardL: {linear: linearSpeed, angular: angularSpeed},
+        forward: {linear: linearSpeed, angular: 0.0},
+        forwardR: {linear: linearSpeed, angular: -angularSpeed},
+        rotateL: {linear: 0.0, angular: angularSpeed},
+        stop: {linear: 0.0, angular: 0.0},
+        rotateR: {linear: 0.0, angular: -angularSpeed},
+        backwardL: {linear: -linearSpeed, angular: -angularSpeed},
+        backward: {linear: -linearSpeed, angular: 0.0},
+        backwardR: {linear: -linearSpeed, angular: angularSpeed},
+    };
+    return speeds[direction]
+};
+
+function setRoverSpeed(direction) {
+    if (direction === -1) {
+        roverSpeed = roverSpeed - 0.1;
+        if (roverSpeed < roverSpeedMin) {
+            roverSpeed = roverSpeedMin;
+        }
+    } else if (direction === 1) {
+        roverSpeed = roverSpeed + 0.1;
+        if (roverSpeed > roverSpeedMax) {
+            roverSpeed = roverSpeedMax;
+        }
+    }
+    teleopSpeed.value = Math.round(roverSpeed * 10) / 10;
+};
+
+function teleop(linearSpeedX, angularSpeedZ) {
+    if (teleopSwitch.checked) {
+        let data = {
+            linearX: linearSpeedX,
+            angularZ: angularSpeedZ
+        };
+        socketio.emit("teleoperate", data);
+    }
+};
+
+function startTeleop(direction) {
+    teleopTimer = setInterval(function() {
+        let speed = getRoverSpeed(direction, roverSpeed);
+        teleop(speed.linear, speed.angular);
+    }, teleopTimeout);
+}
+
+async function stopTeleop() {
+    clearInterval(teleopTimer);
+    teleop(0.0, 0.0);
+}
+
+teleopSwitch.addEventListener("change", function() {
+    if (this.checked) {
+        teleopStatus.innerHTML = "ON";
+        disableTeleop(false);
+    } else {
+        teleopStatus.innerHTML = "OFF";
+        disableTeleop(true);
+    }
+});
+
+// Desktop
 teleopButton1.addEventListener("mousedown", () => { startTeleop("forwardL"); });
 teleopButton2.addEventListener("mousedown", () => { startTeleop("forward"); });
 teleopButton3.addEventListener("mousedown", () => { startTeleop("forwardR"); });
@@ -208,6 +374,7 @@ teleopButton7.addEventListener("mouseup", () => { stopTeleop(); });
 teleopButton8.addEventListener("mouseup", () => { stopTeleop(); });
 teleopButton9.addEventListener("mouseup", () => { stopTeleop(); });
 
+// Mobile device with touch screen
 teleopButton1.addEventListener("touchstart", () => { startTeleop("forwardL"); });
 teleopButton2.addEventListener("touchstart", () => { startTeleop("forward"); });
 teleopButton3.addEventListener("touchstart", () => { startTeleop("forwardR"); });
@@ -228,113 +395,54 @@ teleopButton7.addEventListener("touchend", () => { stopTeleop(); });
 teleopButton8.addEventListener("touchend", () => { stopTeleop(); });
 teleopButton9.addEventListener("touchend", () => { stopTeleop(); });
 
-function teleop(linearSpeedX, angularSpeedZ) {
-    if (teleopSwitch.checked) {
-        let data = {
-            linearX: linearSpeedX,
-            angularZ: angularSpeedZ
-        };
-        socketio.emit("teleoperate", data);
-    }
-};
 
+//----------------------------------------------------------------------------
+// Location
+//----------------------------------------------------------------------------
+const locationLat = document.getElementById("locationLat");
+const locationLon = document.getElementById("locationLon");
+const locationAlt = document.getElementById("locationAlt");
 
-function startTeleop(direction) {
-    teleopTimer = setInterval(function() {
-        teleop(speeds[direction]["linear"], speeds[direction]["angular"]);
-    }, teleopTimeout);
-}
-
-
-async function stopTeleop() {
-    clearInterval(teleopTimer);
-    await sleep(teleopTimeout);
-    teleop(0.0, 0.0);
-}
-
-// Navigation
-let navStatus = "PENDING";
-let navGoal = {};
-
-// Set navigation goal when user clicks a point on map
-map.on("click", function(event) {
-    const navGoalDD = document.getElementById("inputNavGoal");
-    if (navGoalDD.value === "mapClick" && navStatus === "PENDING") {
-        let clickedMapPointLat = event.latlng.lat;
-        let clickedMapPointLon = event.latlng.lng;
-        navGoal = {
-            mapClick: {
-                latitude: clickedMapPointLat,
-                longitude: clickedMapPointLon,
-            }
-        };
-        goalMarkerGroup.clearLayers();
-        L.marker(
-            L.latLng(clickedMapPointLat, clickedMapPointLon),
-            {"icon": navTargetIcon},
-        ).addTo(goalMarkerGroup);
-    }
+socketio.on("navsatfix", function(msg) {
+    roverLat = msg.lat;
+    roverLon = msg.lon;
+    locationLat.innerHTML = msg.lat;
+    locationLon.innerHTML = msg.lon;
+    locationAlt.innerHTML = msg.alt;
+    roverArrow.setLatLngs([[
+        [roverLat, roverLon],
+        [msg.arrowhead.lat, msg.arrowhead.lon]
+    ]]).arrowheads().addTo(map);
+    roverMarker.setLatLng([roverLat, roverLon]).addTo(map);
 });
 
-// Set navigation goal
-function setNavGoal(selectedGoal) {
-    if (navStatus !== "PENDING" || selectedGoal === "mapClick") {
-        return
+//----------------------------------------------------------------------------
+// Telemetry
+//----------------------------------------------------------------------------
+const batteryPctIcon = document.getElementById("batteryPctIcon");
+const batteryPct = document.getElementById("batteryPct");
+const batteryCharge = document.getElementById("batteryCharge");
+const batteryCapacity = document.getElementById("batteryCapacity");
+const batteryTemp = document.getElementById("batteryTemp");
+
+socketio.on("battery_state", function(msg) {
+    batteryPctIcon.classList.remove(...batteryPctIcon.classList);
+    batteryPctIcon.classList.add("fas");
+
+    if (msg.percentage > 90.0) {
+        batteryPctIcon.classList.add("fa-battery-full");
+    } else if (msg.percentage > 75.0) {
+        batteryPctIcon.classList.add("fa-battery-three-quarters");
+    } else if (msg.percentage > 50.0) {
+        batteryPctIcon.classList.add("fa-battery-half");
+    } else if (msg.percentage > 25.0) {
+        batteryPctIcon.classList.add("fa-battery-quarter");
+    } else if (msg.percentage < 10.0) {
+        batteryPctIcon.classList.add("fa-battery-empty");
     }
-    if (selectedGoal === "mfgLab" || selectedGoal === "roboLab") {
-        navGoal = {
-            goal: selectedGoal
-        };
-    } else if (selectedGoal === "auto2robo" || selectedGoal === "robo2auto") {
-        navGoal = {
-            route: selectedGoal
-        };
-    }
-};
 
-// Start a navigation task
-function navStart() {
-    if (navStatus === "ACTIVE") {
-        return;
-    }
-    disableTeleopButtons(true);
-    navStatus = "ACTICE";
-    document.getElementById("navStatus").innerHTML = "ACTIVE   ";
-    const startNavButton = document.getElementById("navStart");
-    teleopSwitch.disabled = true;
-    startNavButton.disabled = true;
-    socketio.emit("start_navigation", navGoal);
-};
-
-// Cancel the navigation task
-function navStop() {
-    socketio.emit("stop_navigation");
-};
-
-function resetNavFeedback() {
-    navStatus = "PENDING";
-    document.getElementById("navStatus").innerHTML = "PENDING  ";
-    document.getElementById("navTimeRem").innerHTML = 0.0;
-    document.getElementById("navDistRem").innerHTML = 0.0;
-    document.getElementById("navNavTime").innerHTML = 0.0;
-    document.getElementById("navNumRecs").innerHTML = 0;
-    teleopSwitch.disabled = false;
-    document.getElementById("navStart").disabled = false;
-    disableTeleopButtons(true);
-};
-
-
-function disableTeleopButtons(isDisabled) {
-    teleopButton1.disabled = isDisabled;
-    teleopButton2.disabled = isDisabled;
-    teleopButton3.disabled = isDisabled;
-    teleopButton4.disabled = isDisabled;
-    // stop button remains enabled
-    teleopButton6.disabled = isDisabled;
-    teleopButton7.disabled = isDisabled;
-    teleopButton8.disabled = isDisabled;
-    teleopButton9.disabled = isDisabled;
-};
-
-disableTeleopButtons(true);
-resetNavFeedback();
+    batteryPct.innerHTML = msg.percentage.toFixed(1);
+    batteryCharge.innerHTML = msg.charge.toFixed(1);
+    batteryCapacity.innerHTML = msg.capacity;
+    batteryTemp.innerHTML = msg.temperature.toFixed(1);
+});

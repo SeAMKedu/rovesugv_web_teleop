@@ -66,3 +66,5 @@ class DataTracking(Node):
             callback=self.planned_path_callback,
             qos_profile=10,
         )
+    
+

@@ -1,7 +1,33 @@
 {% extends "index.html" %}
 
+{% block connection %}Connection{% endblock %}
+
+{% block envSimulation %}Simulation{% endblock %}
+{% block language %}Language{% endblock %}
+{% block theme %}Theme{% endblock %}
 {% block themeDark %}Dark{% endblock %}
-{% block themeLigth %}Light{% endblock %}
+{% block themeLight %}Light{% endblock %}
+
+{% block navTitle %}Navigation{% endblock %}
+{% block navSubtitleTarget %}Target/Route Selection{% endblock %}
+{% block navTargetClickMap %}Click Map{% endblock %}
+{% block navTargetMaptLab %}Machine & Production Tech Lab{% endblock %}
+{% block navTargetRoboLab %}Robotics Lab{% endblock %}
+{% block navSubtitleYaw %}Yaw{% endblock %}
+{% block navSubtitleControl %}Control{% endblock %}
+{% block navStopButton %}Stop{% endblock %}
+{% block navResetButton %}Reset{% endblock %}
+{% block navStartButton %}Start{% endblock %}
+{% block navSubtitleProgress %}Progress{% endblock %}
+{% block navSubtitleFeedback %}Feedback{% endblock %}
+{% block navStatus %}Status{% endblock %}
+{% block navNavTime %}Navigation Time{% endblock %}
+{% block navTimeRem %}Time Remaining{% endblock %}
+{% block navDistRem %}Distance Remaining{% endblock %}
+{% block navNumRecs %}Number of Recoveries{% endblock %}
+
+{% block teleopTitle %}Teleoperate{% endblock %}
+{% block teleopSpeed %}Speed{% endblock %}
 
 {% block locationTitle %}Location{% endblock %}
 {% block locationLat %}Latitude{% endblock %}
@@ -9,28 +35,5 @@
 {% block locationAlt %}Altitude{% endblock %}
 {% block locationButton %}Show on map{% endblock %}
 
-{% block batteryTitle %}Battery{% endblock %}
-{% block batteryCharge %}Charge{% endblock %}
-{% block batteryPct %}Percentage{% endblock %}
-{% block batteryVoltage %}Voltage{% endblock %}
-{% block batteryButton %}Go to Charging{% endblock %}
-
-{% block teleopTitle %}Teleoperate{% endblock %}
-{% block teleopSwitch %}Enable{% endblock %}
-
-{% block navTitle %}Navigation{% endblock %}
-{% block navStatus %}Status{% endblock %}
-{% block navTimeRem %}Time Remaining{% endblock %}
-{% block navDistRem %}Distance Remaining{% endblock %}
-{% block navNavTime %}Navigation Time{% endblock %}
-{% block navNumRecs %}Number of Recoveries{% endblock %}
-{% block navTarget %}Target or Route{% endblock %}
-{% block navTarget1 %}Click on Map{% endblock %}
-{% block navTarget2 %}Automotive Lab{% endblock %}
-{% block navTarget3 %}Manufacturing Lab{% endblock %}
-{% block navTarget4 %}Robotics Lab{% endblock %}
-{% block navStartButton %}Start{% endblock %}
-{% block navStopButton %}Stop{% endblock %}
-
-{% block environment %}Environment {% endblock %}
-{% block envSimulation %}Simulation{% endblock %}
+{% block telemetryTitle %}Telemetry{% endblock %}
+{% block telemetrySubtitleBattery %}Battery{% endblock %}

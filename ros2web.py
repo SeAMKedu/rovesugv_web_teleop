@@ -12,7 +12,7 @@ from nav_msgs.msg import Odometry, Path
 from nav2_msgs.action._navigate_to_pose import NavigateToPose_FeedbackMessage
 from sensor_msgs.msg import BatteryState, NavSatFix
 
-from config import cfg
+from config import config
 from utils.gps_utils import euler_from_quaternion
 from utils.tracking import DataTracking
 
@@ -25,9 +25,10 @@ sio = socketio.SimpleClient()
 def battery_state_callback(msg: BatteryState):
     """Called when a battery state message is published."""
     data = {
+        "capacity": round(msg.design_capacity, 1),
         "charge": round(msg.charge, 1),
         "percentage": round(100 * msg.percentage, 1),
-        "voltage": round(msg.voltage, 1),
+        "temperature": round(msg.temperature, 1),
     }
     sio.emit("on_battery_state", data)
 
@@ -85,7 +86,7 @@ def navsatfix_callback(msg: NavSatFix):
         "alt": round(msg.altitude, 9),
         "lat": round(msg.latitude, 9),
         "lon": round(msg.longitude, 9),
-        "arrow_head": {
+        "arrowhead": {
             "lat": arrow_head.latitude,
             "lon": arrow_head.longitude,
         }
@@ -95,8 +96,8 @@ def navsatfix_callback(msg: NavSatFix):
 
 def planned_path_callback(msg: Path):
     """Called when a planned Nav2 path message is published."""
-    start_point_lat = cfg["start_point"][cfg["env"]]["latitude"]
-    start_point_lon = cfg["start_point"][cfg["env"]]["longitude"]
+    start_point_lat = config.start_point.latitude
+    start_point_lon = config.start_point.longitude
     data = []
     poses: Sequence[PoseStamped] = msg.poses
 
@@ -122,9 +123,7 @@ def planned_path_callback(msg: Path):
 
 def main():
     try:
-        host = cfg["server"]["host"]
-        port = cfg["server"]["port"]
-        sio.connect(url=f"http://{host}:{port}")
+        sio.connect(url=f"http://{config.app.host}:{config.app.port}")
     except socketio.exceptions.ConnectionError:
         print("Could not connect to the SocketIO server, exiting...")
         return sys.exit(1)
@@ -132,15 +131,15 @@ def main():
     rclpy.init()
     
     tracking = DataTracking(
-        battery_state_topic=cfg["topic"]["battery"][cfg["env"]],
+        battery_state_topic=config.ros2_topics.battery,
         battery_state_callback=battery_state_callback,
-        odom_topic=cfg["topic"]["odom"][cfg["env"]],
+        odom_topic=config.ros2_topics.odom,
         odom_callback=odom_callback,
-        nav_feedback_topic=cfg["topic"]["nav_feedback"][cfg["env"]],
+        nav_feedback_topic=config.ros2_topics.nav_feedback,
         nav_feedback_callback=nav_feedback_callback,
-        navsatfix_topic=cfg["topic"]["navsatfix"][cfg["env"]],
+        navsatfix_topic=config.ros2_topics.navsatfix,
         navsatfix_callback=navsatfix_callback,
-        planned_path_topic=cfg["topic"]["planned_path"][cfg["env"]],
+        planned_path_topic=config.ros2_topics.planned_path,
         planned_path_callback=planned_path_callback,
     )
     

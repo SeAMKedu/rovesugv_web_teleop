@@ -3,14 +3,27 @@ from flask import Flask, render_template, request
 from flask_socketio import SocketIO
 from nav2_simple_commander.robot_navigator import TaskResult
 
-from config import cfg
+import yaml
+from config import config
 from models import GPSWaypoint
 from utils.navigation import Navigation
 from utils.teleop import RoverTeleop
 
+
 app = Flask(__name__)
 socketio = SocketIO(app)
-env = cfg["env"]
+is_navigation_active = False
+
+
+def read_waypoints(route):
+    waypoints = []
+    with open("waypoints.yaml", "r") as file:
+        data: dict = yaml.safe_load(file)
+        wps = data.get(route, [])
+        for wp in wps:
+            waypoint = [wp["latitude"], wp["longitude"], wp["yaw"]]
+            waypoints.append(waypoint)
+    return waypoints
 
 
 @app.route("/")
@@ -19,13 +32,14 @@ def index():
     language_code = request.args.get("lang", "fi")
     default_template = "lang_fi.html"
     template = "lang_en.html" if language_code == "en" else default_template
-    return render_template(template, env=env)
+    return render_template(template, use_sim=config.use_sim)
 
 
 @socketio.event
 def connect():
     """Called when a client connects to the SocketIO server."""
-    socketio.emit("connection", "connected")
+    message = {"navStatus": is_navigation_active}
+    socketio.emit("connection", message)
 
 
 @socketio.event
@@ -66,52 +80,71 @@ def teleoperate(data: dict):
 
 def on_navigation_result(result: TaskResult):
     """Send the result of the Nav2 task to the connected clients."""
+    global is_navigation_active
+    is_navigation_active = False
+    socketio.emit("nav_status", is_navigation_active)
     socketio.emit("nav_result", result.name)
+
+
+@socketio.event
+def get_waypoints(route: str):
+    waypoints = read_waypoints(route)
+    socketio.emit("nav_waypoints", waypoints)
 
 
 @socketio.event
 def start_navigation(data: dict):
     """Receive a new navigation task."""
+    global is_navigation_active
+    if is_navigation_active:
+        return
+    is_navigation_active = True
+    socketio.emit("nav_status", is_navigation_active)
+
     goal = data.get("goal")
-    map_click = data.get("mapClick")
-    route = data.get("route")
 
     waypoints = []
-    if goal: # navigate to predefined goal pose
-        goal_pose = cfg["waypoints"]["goals"][goal]
+    if goal == "mapPoint": # navigate to map point clicked by the user
         waypoints = [GPSWaypoint(
-            latitude=goal_pose["latitude"],
-            longitude=goal_pose["longitude"],
-            yaw=goal_pose["yaw"]
+            latitude=data.get("latitude"),
+            longitude=data.get("longitude"),
+            yaw=data.get("yaw"),
         )]
-    elif map_click: # navigate to map point clicked by the user
+    elif goal in ("maptLab", "roboLab"): # navigate to predefined goal pose
+        wps = read_waypoints(goal)
         waypoints = [GPSWaypoint(
-            latitude=map_click["latitude"],
-            longitude=map_click["longitude"],
-            yaw=0.0
+            latitude=wps[0][0],
+            longitude=wps[0][1],
+            yaw=wps[0][2]
         )]
-    elif data["route"]: # navigate via predefined route
-        route_poses = cfg["waypoints"]["routes"][route]
-        for pose in route_poses:
+    elif goal in ("auto2robo", "robo2auto"): # navigate via predefined route
+        wps = read_waypoints(goal)
+        for wp in wps:
             waypoint = GPSWaypoint(
-                latitude=pose["latitude"],
-                longitude=pose["longitude"],
-                yaw=pose["yaw"]
+                latitude=wp[0],
+                longitude=wp[1],
+                yaw=wp[2]
             )
             waypoints.append(waypoint)
+    else:
+        pass
     navigation.start(waypoints, on_navigation_result)
 
 
 @socketio.event
 def stop_navigation():
     """Cancel the navigation task."""
+    global is_navigation_active
+    is_navigation_active = False
+    socketio.emit("nav_status", is_navigation_active)
+
     navigation.cancel()
 
 
 if __name__ == "__main__":
     rclpy.init()
     navigation = Navigation()
-    teleop = RoverTeleop(cfg["topic"]["teleop"][env])
+    teleop = RoverTeleop(config.ros2_topics.teleop)
     socketio.run(app, host="0.0.0.0", debug=True)
     navigation.destroy_node()
     teleop.destroy_node()
