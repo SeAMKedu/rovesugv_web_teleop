@@ -50,6 +50,10 @@ socketio.on("connection", function(msg) {
     });
 });
 
+//----------------------------------------------------------------------------
+// Emergency Stop
+//----------------------------------------------------------------------------
+function e_stop() {};
 
 //----------------------------------------------------------------------------
 // Leaflet
@@ -406,15 +410,19 @@ const locationAlt = document.getElementById("locationAlt");
 socketio.on("navsatfix", function(msg) {
     roverLat = msg.lat;
     roverLon = msg.lon;
-    locationLat.innerHTML = msg.lat;
-    locationLon.innerHTML = msg.lon;
-    locationAlt.innerHTML = msg.alt;
+    locationLat.innerHTML = msg.lat.toFixed(9);
+    locationLon.innerHTML = msg.lon.toFixed(9);
+    locationAlt.innerHTML = msg.alt.toFixed(1);
     roverArrow.setLatLngs([[
         [roverLat, roverLon],
         [msg.arrowhead.lat, msg.arrowhead.lon]
     ]]).arrowheads().addTo(map);
     roverMarker.setLatLng([roverLat, roverLon]).addTo(map);
 });
+
+function setMapView() {
+    map.setView([roverLat, roverLon], mapZoom);
+};
 
 //----------------------------------------------------------------------------
 // Telemetry

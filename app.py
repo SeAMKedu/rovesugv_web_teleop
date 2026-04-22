@@ -1,3 +1,10 @@
+# TODO
+# Pantherin nollapisteen määritys
+# ros2 service call /toLL robot_localization/srv/ToLL
+#
+# Hätäseis-toiminto
+# ros2 service call /panther/hardware/e_stop_trigger std_srvs/srv/Trigger
+# ros2 service call /panther/hardware/e_stop_reset std_srvs/srv/Trigger
 import rclpy
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO
@@ -46,6 +53,11 @@ def connect():
 def disconnect():
     """Called when the client disconnects from the SocketIO server."""
     pass
+
+
+@socketio.event
+def e_stop(message: str):
+    print(message)
 
 
 @socketio.event

@@ -19,7 +19,7 @@
     <!--Navigation bar-->
     <nav class="navbar navbar-expand-lg bg-dark border-bottom border-light sticky-top" data-bs-theme="dark">
         <div class="container-fluid">
-            <button class="btn btn-danger btn-lg" type="button">E-STOP</button>
+            <button class="btn btn-danger btn-lg" type="button" data-bs-toggle="button" id="eStopButton" onclick="e_stop()">E-STOP</button>
             <ul class="navbar-nav">
                 <li class="nav-item">
                     <a href="#" class="nav-link" id="connStatus">
@@ -126,23 +126,23 @@
                             <tbody>
                                 <tr>
                                     <th scope="row">{% block navStatus %}{% endblock %}</th>
-                                    <td><pre><span id="navStatus"></span></pre></td>
+                                    <td><pre><span id="navStatus"></span>PENDING</pre></td>
                                 </tr>
                                 <tr>
                                     <th scope="row">{% block navNavTime %}{% endblock %}</th>
-                                    <td><span id="navNavTime"></span><span> s</span></td>
+                                    <td><span id="navNavTime"></span>0.0<span> s</span></td>
                                 </tr>
                                 <tr>
                                     <th scope="row">{% block navTimeRem %}{% endblock %}</th>
-                                    <td><span id="navTimeRem"></span><span> s</span></td>
+                                    <td><span id="navTimeRem"></span>0.0<span> s</span></td>
                                 </tr>
                                 <tr>
                                     <th scope="row">{% block navDistRem %}{% endblock %}</th>
-                                    <td><span id="navDistRem"></span><span> m</span></td>
+                                    <td><span id="navDistRem"></span>0.0<span> m</span></td>
                                 </tr>
                                 <tr>
                                     <th scope="row">{% block navNumRecs %}{% endblock %}</th>
-                                    <td><span id="navNumRecs"></span></td>
+                                    <td><span id="navNumRecs"></span>0</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -234,15 +234,15 @@
                             <tbody>
                                 <tr>
                                     <th scope="row">{% block locationLat %}{% endblock %}</th>
-                                    <td><span id="locationLat"></span></td>
+                                    <td><span id="locationLat">0.000000000</span><span>°</span></td>
                                 </tr>
                                 <tr>
                                     <th scope="row">{% block locationLon %}{% endblock %}</th>
-                                    <td><span id="locationLon"></span></td>
+                                    <td><span id="locationLon">0.000000000</span><span>°</span></td>
                                 </tr>
                                 <tr>
                                     <th scope="row">{% block locationAlt %}{% endblock %}</th>
-                                    <td><span id="locationAlt"></span></td>
+                                    <td><span id="locationAlt">0.0</span><span> m</span></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -264,13 +264,13 @@
                             <tbody>
                                 <tr>
                                     <td>
-                                        <i class="fas fa-battery-empty" id="batteryPctIcon"></i> <span id="batteryPct"></span><span> %</span>
+                                        <i class="fas fa-battery-empty" id="batteryPctIcon"></i> <span id="batteryPct">0.0</span><span> %</span>
                                     </td>
                                     <td>
-                                        <i class="fas fa-bolt"></i><span id="batteryCharge"></span><span>/</span><span id="batteryCapacity"></span><span> Ah</span>
+                                        <i class="fas fa-bolt"></i><span id="batteryCharge">0.0</span><span>/</span>0.0<span id="batteryCapacity"></span><span> Ah</span>
                                     </td>
                                     <td>
-                                        <i class="fas fa-temperature-full"></i><span id="batteryTemp"></span><span> °C</span>
+                                        <i class="fas fa-temperature-full"></i><span id="batteryTemp">0.0</span><span> °C</span>
                                     </td>
                                 </tr>
                             </tbody>
