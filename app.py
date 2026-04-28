@@ -13,12 +13,14 @@ from nav2_simple_commander.robot_navigator import TaskResult
 import yaml
 from config import config
 from models import GPSWaypoint
+from utils.estop import EmergencyStop
 from utils.navigation import Navigation
 from utils.teleop import RoverTeleop
 
 
 app = Flask(__name__)
 socketio = SocketIO(app)
+is_estop_triggered = False
 is_navigation_active = False
 
 
@@ -39,7 +41,11 @@ def index():
     language_code = request.args.get("lang", "fi")
     default_template = "lang_fi.html"
     template = "lang_en.html" if language_code == "en" else default_template
-    return render_template(template, use_sim=config.use_sim)
+    return render_template(
+        template, 
+        use_sim=config.use_sim,
+        is_estop_triggered=is_estop_triggered,
+    )
 
 
 @socketio.event
@@ -57,7 +63,15 @@ def disconnect():
 
 @socketio.event
 def e_stop(message: str):
-    print(message)
+    global is_estop_triggered
+    if config.use_sim: # there is no e-stop in simulation
+        return
+    if message == "triggered":
+        estop.trigger()
+        is_estop_triggered = True
+    elif message == "reset":
+        estop.reset()
+        is_estop_triggered = False
 
 
 @socketio.event
@@ -155,9 +169,13 @@ def stop_navigation():
 
 if __name__ == "__main__":
     rclpy.init()
+    if not config.use_sim:
+        estop = EmergencyStop()
     navigation = Navigation()
     teleop = RoverTeleop(config.ros2_topics.teleop)
     socketio.run(app, host="0.0.0.0", debug=True)
+    if not config.use_sim:
+        estop.destroy_node()
     navigation.destroy_node()
     teleop.destroy_node()
     rclpy.try_shutdown()

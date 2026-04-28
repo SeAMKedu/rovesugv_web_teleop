@@ -8,6 +8,7 @@ import rclpy
 import socketio
 import socketio.exceptions
 from geometry_msgs.msg import PoseStamped, Quaternion
+from geographic_msgs.msg import GeoPoint
 from nav_msgs.msg import Odometry, Path
 from nav2_msgs.action._navigate_to_pose import NavigateToPose_FeedbackMessage
 from sensor_msgs.msg import BatteryState, NavSatFix
@@ -15,12 +16,25 @@ from sensor_msgs.msg import BatteryState, NavSatFix
 from config import config
 from utils.gps_utils import euler_from_quaternion
 from utils.tracking import DataTracking
+from utils.transform import Transform
 
 
 bearing = 0.0
 lock = Lock()
 sio = socketio.SimpleClient()
+# Latitude and longitude of point (x=0, y=0).
+origo = GeoPoint()
 
+
+def set_origo():
+    """When Nav2 is started, set origo as latitude and longitude."""
+    global origo
+    transform = Transform()
+    response = transform.to_ll()
+    origo = response.ll_point
+    transform.destroy_node()
+    print(f"[INFO] {origo=}")
+    
 
 def battery_state_callback(msg: BatteryState):
     """Called when a battery state message is published."""
@@ -96,8 +110,6 @@ def navsatfix_callback(msg: NavSatFix):
 
 def planned_path_callback(msg: Path):
     """Called when a planned Nav2 path message is published."""
-    start_point_lat = config.start_point.latitude
-    start_point_lon = config.start_point.longitude
     data = []
     poses: Sequence[PoseStamped] = msg.poses
 
@@ -112,7 +124,7 @@ def planned_path_callback(msg: Path):
         bearing_geopy = 90 - bearing_degrees
         # GPS coordinates of the waypoint.
         waypoint = geopy.distance.distance(meters=distance).destination(
-            point=(start_point_lat, start_point_lon),
+            point=(origo.latitude, origo.longitude),
             bearing=bearing_geopy,
         )
         # The GPS coordinates are used to form a polyline on the Leaflet map.
@@ -129,6 +141,8 @@ def main():
         return sys.exit(1)
     
     rclpy.init()
+
+    set_origo()
     
     tracking = DataTracking(
         battery_state_topic=config.ros2_topics.battery,

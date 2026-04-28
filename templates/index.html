@@ -19,7 +19,13 @@
     <!--Navigation bar-->
     <nav class="navbar navbar-expand-lg bg-dark border-bottom border-light sticky-top" data-bs-theme="dark">
         <div class="container-fluid">
-            <button class="btn btn-danger btn-lg" type="button" data-bs-toggle="button" id="eStopButton" onclick="e_stop()">E-STOP</button>
+            {% if is_estop_triggered %}
+            <button type="button" data-bs-toggle="button" id="eStopButton" onclick="e_stop()" class="btn btn-outline-danger btn-lg active">
+            {% else %}
+            <button type="button" data-bs-toggle="button" id="eStopButton" onclick="e_stop()" class="btn btn-outline-danger btn-lg">
+            {% endif %}
+                <i class="fas fa-arrows-spin"></i> E-STOP
+            </button>
             <ul class="navbar-nav">
                 <li class="nav-item">
                     <a href="#" class="nav-link" id="connStatus">
@@ -95,23 +101,23 @@
                         </div>
                         <h6 class="card-subtitle mb-2">{% block navSubtitleYaw %}{% endblock %}</h6>
                         <div class="row">
-                            <div class="col-9">
+                            <div class="col">
                                 <input class="form-range" type="range" min="-180" max="180" step="5" value="0" id="yawInput">
                             </div>
-                            <div class="col-3">
+                            <div class="col">
                                 <i class="fas fa-circle-arrow-right fa-2xl fa-rotate-by" id="yawArrow" style="--fa-rotate-angle: 0deg"></i>
                                 <output for="navYaw" id="yawOutput" aria-hidden="true"></output>
                             </div>
                         </div>
                         <h6 class="card-subtitle mb-2">{% block navSubtitleControl %}{% endblock %}</h6>
                         <div class="text-center mb-3">
-                            <button class="btn btn-danger" type="button" onclick="stopNav();">
+                            <button class="btn btn-danger mb-2" type="button" onclick="stopNav();">
                                 <i class="fas fa-circle-xmark"></i> {% block navStopButton %}{% endblock %}
                             </button>
-                            <button class="btn btn-warning" type="button" id="navResetBtn" onclick="resetNav();">
+                            <button class="btn btn-warning mb-2" type="button" id="navResetBtn" onclick="resetNav();">
                                 <i class="fas fa-arrow-rotate-left"></i> {% block navResetButton %}{% endblock %}
                             </button>
-                            <button class="btn btn-success" type="button" id="navStartBtn" onclick="startNav();">
+                            <button class="btn btn-success mb-2" type="button" id="navStartBtn" onclick="startNav();">
                                 <i class="fas fa-play"></i> {% block navStartButton %}{% endblock %}
                             </button>
                         </div>
@@ -122,30 +128,32 @@
                             </div>
                         </div>
                         <h6 class="card-subtitle mb-2">{% block navSubtitleFeedback %}{% endblock %}</h6>
-                        <table class="table table-striped">
-                            <tbody>
-                                <tr>
-                                    <th scope="row">{% block navStatus %}{% endblock %}</th>
-                                    <td><pre><span id="navStatus"></span>PENDING</pre></td>
-                                </tr>
-                                <tr>
-                                    <th scope="row">{% block navNavTime %}{% endblock %}</th>
-                                    <td><span id="navNavTime"></span>0.0<span> s</span></td>
-                                </tr>
-                                <tr>
-                                    <th scope="row">{% block navTimeRem %}{% endblock %}</th>
-                                    <td><span id="navTimeRem"></span>0.0<span> s</span></td>
-                                </tr>
-                                <tr>
-                                    <th scope="row">{% block navDistRem %}{% endblock %}</th>
-                                    <td><span id="navDistRem"></span>0.0<span> m</span></td>
-                                </tr>
-                                <tr>
-                                    <th scope="row">{% block navNumRecs %}{% endblock %}</th>
-                                    <td><span id="navNumRecs"></span>0</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <tbody>
+                                    <tr>
+                                        <th scope="row">{% block navStatus %}{% endblock %}</th>
+                                        <td><pre><span id="navStatus">PENDING</span></pre></td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">{% block navNavTime %}{% endblock %}</th>
+                                        <td><span id="navNavTime">0.0</span><span> s</span></td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">{% block navTimeRem %}{% endblock %}</th>
+                                        <td><span id="navTimeRem">0.0</span><span> s</span></td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">{% block navDistRem %}{% endblock %}</th>
+                                        <td><span id="navDistRem">0.0</span><span> m</span></td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">{% block navNumRecs %}{% endblock %}</th>
+                                        <td><span id="navNumRecs">0</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -176,35 +184,35 @@
                         </div>
                         <hr>
                         <div class="text-center mb-1">
-                            <button class="btn btn-primary btn-lg" type="button" id="teleop1">
+                            <button class="btn btn-primary" type="button" id="teleop1">
                                 <i class="fas fa-arrow-turn-up fa-rotate-270"></i>
                             </button>
-                            <button class="btn btn-primary btn-lg" type="button" id="teleop2">
+                            <button class="btn btn-primary" type="button" id="teleop2">
                                 <i class="fas fa-arrow-up"></i>
                             </button>
-                            <button class="btn btn-primary btn-lg" type="button" id="teleop3">
+                            <button class="btn btn-primary" type="button" id="teleop3">
                                 <i class="fas fa-arrow-turn-down fa-rotate-270"></i>
                             </button>
                         </div>
                         <div  class="text-center mb-1">
-                            <button class="btn btn-primary btn-lg" type="button" id="teleop4">
+                            <button class="btn btn-primary" type="button" id="teleop4">
                                 <i class="fas fa-arrow-rotate-left"></i>
                             </button>
-                            <button class="btn btn-primary btn-lg" type="button" id="teleop5">
+                            <button class="btn btn-primary" type="button" id="teleop5">
                                 <i class="fas fa-x"></i>
                             </button>
-                            <button class="btn btn-primary btn-lg" type="button" id="teleop6">
+                            <button class="btn btn-primary" type="button" id="teleop6">
                                 <i class="fas fa-arrow-rotate-right"></i>
                             </button>
                         </div>
                         <div class="text-center mb-3">
-                            <button class="btn btn-primary btn-lg" type="button" id="teleop7">
+                            <button class="btn btn-primary" type="button" id="teleop7">
                                 <i class="fas fa-arrow-turn-down fa-rotate-90"></i>
                             </button>
-                            <button class="btn btn-primary btn-lg" type="button" id="teleop8">
+                            <button class="btn btn-primary" type="button" id="teleop8">
                                 <i class="fas fa-arrow-down"></i>
                             </button>
-                            <button class="btn btn-primary btn-lg" type="button" id="teleop9">
+                            <button class="btn btn-primary" type="button" id="teleop9">
                                 <i class="fas fa-arrow-turn-up fa-rotate-90"></i>
                             </button>
                         </div>
@@ -230,22 +238,25 @@
                             <i class="fas fa-location-dot"></i> {% block locationTitle %}{% endblock %}
                         </h5>
                         <hr>
-                        <table class="table table-striped">
-                            <tbody>
-                                <tr>
-                                    <th scope="row">{% block locationLat %}{% endblock %}</th>
-                                    <td><span id="locationLat">0.000000000</span><span>°</span></td>
-                                </tr>
-                                <tr>
-                                    <th scope="row">{% block locationLon %}{% endblock %}</th>
-                                    <td><span id="locationLon">0.000000000</span><span>°</span></td>
-                                </tr>
-                                <tr>
-                                    <th scope="row">{% block locationAlt %}{% endblock %}</th>
-                                    <td><span id="locationAlt">0.0</span><span> m</span></td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <div class="table-responsive mb-2">
+                            <table class="table table-striped">
+                                <tbody>
+                                    <tr>
+                                        <th scope="row">{% block locationLat %}{% endblock %}</th>
+                                        <td><span id="locationLat">0.000000000</span><span>°</span></td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">{% block locationLon %}{% endblock %}</th>
+                                        <td><span id="locationLon">0.000000000</span><span>°</span></td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">{% block locationAlt %}{% endblock %}</th>
+                                        <td><span id="locationAlt">0.0</span><span> m</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
                         <button class="btn btn-primary" type="button" onclick="setMapView()">{% block locationButton %}{% endblock %}</button>
                     </div>
                 </div>
@@ -260,21 +271,23 @@
                         </h5>
                         <hr>
                         <h6 class="card-subtitle mb-2">{% block telemetrySubtitleBattery %}{% endblock %}</h6>
-                        <table class="table table-striped">
-                            <tbody>
-                                <tr>
-                                    <td>
-                                        <i class="fas fa-battery-empty" id="batteryPctIcon"></i> <span id="batteryPct">0.0</span><span> %</span>
-                                    </td>
-                                    <td>
-                                        <i class="fas fa-bolt"></i><span id="batteryCharge">0.0</span><span>/</span>0.0<span id="batteryCapacity"></span><span> Ah</span>
-                                    </td>
-                                    <td>
-                                        <i class="fas fa-temperature-full"></i><span id="batteryTemp">0.0</span><span> °C</span>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            <i class="fas fa-battery-empty" id="batteryPctIcon"></i> <span id="batteryPct">0.0</span><span> %</span>
+                                        </td>
+                                        <td>
+                                            <i class="fas fa-bolt"></i><span id="batteryCharge">0.0</span><span>/</span>0.0<span id="batteryCapacity"></span><span> Ah</span>
+                                        </td>
+                                        <td>
+                                            <i class="fas fa-temperature-full"></i><span id="batteryTemp">0.0</span><span> °C</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -5,9 +5,8 @@ sim:
   navsatfix_topic: /gps/fix
   planned_path_topic: /plan
   teleop_topic: /cmd_vel
-  start_point:
-    latitude: 62.789252
-    longitude: 22.821627
+  estop_srv_trigger:
+  estop_srv_reset: 
 
 robot:
   battery_topic: /panther/battery/battery_status
@@ -16,32 +15,8 @@ robot:
   navsatfix_topic: /fixposition/odometry_llh
   planned_path_topic: /plan
   teleop_topic: /panther/cmd_vel
-  start_point:
-    latitude: 62.789709127815286
-    longitude: 22.822385801934388
-
-topics:
-  battery:
-    sim:
-    robot: /panther/battery/battery_status
-  charging:
-    sim:
-    robot: /panther/battery/charging_status
-  odom:
-    sim: /odometry/global
-    robot: /fixposition/odometry_enu_smooth
-  nav_feedback:
-    sim: /navigate_to_pose/_action/feedback
-    robot: /navigate_to_pose/_action/feedback
-  navsatfix:
-    sim: /gps/fix
-    robot: /fixposition/odometry_llh
-  planned_path:
-    sim: /plan
-    robot: /plan
-  teleop:
-    sim: /cmd_vel
-    robot: /panther/cmd_vel
+  estop_srv_trigger: /panther/hardware/e_stop_trigger
+  estop_srv_reset: /panther/hardware/e_stop_reset
 
 # If true, teleoperate a mobile robot in Gazebo simulator
 use_sim: false
@@ -50,7 +25,7 @@ app:
   host: 127.0.0.1
   port: 5000
 
-# Values are filled by "config.py"
+# All values below are filled by "config.py"
 ros2_topics:
   battery:
   odom:
@@ -58,7 +33,6 @@ ros2_topics:
   navsatfix:
   planned_path:
   teleop:
-
-start_point:
-  latitude:
-  longitude:
+estop_srv:
+  trigger:
+  reset: 
