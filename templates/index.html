@@ -121,12 +121,14 @@
                                 <i class="fas fa-play"></i> {% block navStartButton %}{% endblock %}
                             </button>
                         </div>
+                        <!--
                         <h6 class="card-subtitle mb-2">{% block navSubtitleProgress %}{% endblock %}</h6>
                         <div class="text-center mb-3">
                             <div class="progress mt-2" role="progressbar" aria-label="navigation progress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
                                 <div class="progress-bar text-bg-success" style="width: 0%">0%</div>
                             </div>
                         </div>
+                        -->
                         <h6 class="card-subtitle mb-2">{% block navSubtitleFeedback %}{% endblock %}</h6>
                         <div class="table-responsive">
                             <table class="table table-striped">
@@ -160,7 +162,7 @@
 
             <!--Map-->
             <div class="col-sm-8 mb-3">
-                <div id="map" style="height: 610px;"></div>
+                <div id="map" style="height: 560px;"></div>
             </div>
         </div>
 
@@ -279,7 +281,7 @@
                                             <i class="fas fa-battery-empty" id="batteryPctIcon"></i> <span id="batteryPct">0.0</span><span> %</span>
                                         </td>
                                         <td>
-                                            <i class="fas fa-bolt"></i><span id="batteryCharge">0.0</span><span>/</span>0.0<span id="batteryCapacity"></span><span> Ah</span>
+                                            <i class="fas fa-bolt"></i><span id="batteryCharge">0.0</span><span>/</span><span id="batteryCapacity"></span><span> Ah</span>
                                         </td>
                                         <td>
                                             <i class="fas fa-temperature-full"></i><span id="batteryTemp">0.0</span><span> °C</span>

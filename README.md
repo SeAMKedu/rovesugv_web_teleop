@@ -22,9 +22,9 @@ Simulaattori on saatavilla osoitteessa [https://github.com/SeAMKedu/rovesugv_nav
 
 ROS 2 -paketti Husarion Panther -mobiilirobotin GPS-navigointiin on puolestaan saatavilla osoitteessa [https://github.com/SeAMKedu/rovesugv_gps_nav](https://github.com/SeAMKedu/rovesugv_gps_nav).
 
-Aseta ajoympäristö [config.yaml](/config.yaml) tiedoston **env**-avaimessa:
-* sim: simulaattorissa toimiva mobiilirobotti
-* robot: fyysinen Husarion Panther -mobiilirobotti
+Konfiguraationtiedostossa [config.yaml](/config.yaml) on **use_sim** parametri, jossa määritetään ohjataanko 
+* simulaatiossa toimivaa robottia (use_sim: true)
+* tai oikeaa Husarion Panther -mobiilirobottia (use_sim: false).
 
 Käynnistä ensimmäisessä terminaalissa verkkopalvelin alla olevilla komennoilla.
 ```
@@ -32,6 +32,8 @@ $ cd rovesugv_web_teleop
 $ source env/bin/activate
 $ python3 app.py
 ```
+
+Käynnistä simulaattori tai Pantherin GPS-navigointiin tarvittavat ohjelmat.
 
 Käynnistä toisessa terminaalissa ROS 2 -sovellus alla olevilla komennoilla.
 ```

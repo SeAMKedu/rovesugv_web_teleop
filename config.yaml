@@ -19,7 +19,7 @@ robot:
   estop_srv_reset: /panther/hardware/e_stop_reset
 
 # If true, teleoperate a mobile robot in Gazebo simulator
-use_sim: false
+use_sim: true
 
 app:
   host: 127.0.0.1
