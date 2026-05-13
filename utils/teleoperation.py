@@ -2,11 +2,11 @@ from geometry_msgs.msg import Twist
 from rclpy.node import Node
 
 
-class RoverTeleop(Node):
-    """ROS 2 node for teleoperating the mobile robot."""
+class Teleoperation(Node):
+    """ROS 2 node for teleoperating the rover i.e. mobile robot."""
 
     def __init__(self, teleop_topic):
-        super().__init__(node_name="rover_teleop")
+        super().__init__(node_name="web_teleop_teleop")
         self.teleop_topic = teleop_topic
         self.teleop_publisher = self.create_publisher(
             msg_type=Twist,

@@ -15,7 +15,7 @@ from sensor_msgs.msg import BatteryState, NavSatFix
 
 from config import config
 from utils.gps_utils import euler_from_quaternion
-from utils.tracking import DataTracking
+from utils.telemetry import Telemetry
 from utils.transform import Transform
 
 
@@ -23,17 +23,17 @@ bearing = 0.0
 lock = Lock()
 sio = socketio.SimpleClient()
 # Latitude and longitude of point (x=0, y=0).
-origo = GeoPoint()
+origo_ll = GeoPoint()
 
 
 def set_origo():
     """When Nav2 is started, set origo as latitude and longitude."""
-    global origo
+    global origo_ll
     transform = Transform()
     response = transform.to_ll()
-    origo = response.ll_point
+    origo_ll = response.ll_point
     transform.destroy_node()
-    print(f"[INFO] {origo=}")
+    print(f"[INFO] {origo_ll=}")
     
 
 def battery_state_callback(msg: BatteryState):
@@ -124,7 +124,7 @@ def planned_path_callback(msg: Path):
         bearing_geopy = 90 - bearing_degrees
         # GPS coordinates of the waypoint.
         waypoint = geopy.distance.distance(meters=distance).destination(
-            point=(origo.latitude, origo.longitude),
+            point=(origo_ll.latitude, origo_ll.longitude),
             bearing=bearing_geopy,
         )
         # The GPS coordinates are used to form a polyline on the Leaflet map.
@@ -144,7 +144,7 @@ def main():
 
     set_origo()
     
-    tracking = DataTracking(
+    telemetry = Telemetry(
         battery_state_topic=config.ros2_topics.battery,
         battery_state_callback=battery_state_callback,
         odom_topic=config.ros2_topics.odom,
@@ -158,13 +158,13 @@ def main():
     )
     
     try:
-        print("Running data tracking node...")
-        rclpy.spin(tracking)
+        print("Running telemetry node...")
+        rclpy.spin(telemetry)
     except KeyboardInterrupt:
-        print("\nStopping data tracking node...")
+        print("\nStopping telemetry node...")
     finally:
         sio.disconnect()
-        tracking.destroy_node()
+        telemetry.destroy_node()
         rclpy.try_shutdown()
 
 

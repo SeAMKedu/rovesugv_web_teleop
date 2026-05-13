@@ -6,8 +6,8 @@ from rclpy.node import Node
 from sensor_msgs.msg import BatteryState, NavSatFix
 
 
-class DataTracking(Node):
-    """ROS 2 node for data tracking."""
+class Telemetry(Node):
+    """ROS 2 node for telemetry."""
 
     def __init__(
             self,
@@ -22,7 +22,7 @@ class DataTracking(Node):
             planned_path_topic: str,
             planned_path_callback: Callable[[Path], None],
         ):
-        super().__init__(node_name="data_tracking")
+        super().__init__(node_name="web_teleop_telemetry")
 
         self.battery_state_topic = battery_state_topic
         self.battery_state_callback = battery_state_callback

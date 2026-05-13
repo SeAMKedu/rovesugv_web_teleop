@@ -4,12 +4,15 @@ from robot_localization.srv import ToLL
 
 
 class Transform(Node):
+    """ROS 2 node for performing coordinate system transformation."""
+
     def __init__(self):
-        super().__init__(node_name="location_node")
+        super().__init__(node_name="web_teleop_transform")
         self.client = self.create_client(srv_type=ToLL, srv_name="/toLL")
 
         while not self.client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info("Waiting for 'ToLL' servive...")
+
 
     def to_ll(self) -> ToLL.Response:
         """Transform (x=0, y=0, z=0) to (lat, long, alt)."""

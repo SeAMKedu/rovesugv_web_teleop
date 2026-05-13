@@ -2,7 +2,9 @@ from typing import Callable
 
 import rclpy
 from geometry_msgs.msg import PoseStamped
+from nav2_msgs.action import NavigateToPose
 from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
+from rclpy.action import ActionClient
 from rclpy.node import Node
 from robot_localization.srv import FromLL
 
@@ -14,25 +16,41 @@ class Navigation(Node):
     """ROS 2 node for GPS navigation."""
 
     def __init__(self):
-        super().__init__(node_name="seamk_teleop_nav")
-        self.run_task = False
+        super().__init__(node_name="web_teleop_nav")
+        self.is_task_running = False
         self.navigator = BasicNavigator()
         self.srvclient = self.create_client(FromLL, "/fromLL")
+        self.action_client = ActionClient(
+            node=self,
+            action_type=NavigateToPose,
+            action_name="navigate_to_pose"
+        )
+    
+
+    def _check_action_server(self, timeout_sec=5.0) -> bool:
+        """Check if the action server is available."""
+        return self.action_client.wait_for_server(timeout_sec=timeout_sec)
 
 
-    def cancel(self):
-        """Cancel the ongoing navigation task."""
-        if self.run_task:
+    def stop(self):
+        """Stop the ongoing navigation task."""
+        if self.is_task_running:
             self.navigator.cancelTask()
-            self.run_task = False
+            self.is_task_running = False
 
 
     def start(self, gps_waypoints: list[GPSWaypoint], on_result: Callable[[TaskResult], None]):
         """Start a navigation task."""
-        self.run_task = True
+        is_server_available = self._check_action_server()
+        
+        if not is_server_available:
+            on_result(TaskResult(value=0)) # UNKNOWN
+            return
+
+        self.is_task_running = True
 
         for wp in gps_waypoints:
-            if self.run_task == False:
+            if self.is_task_running == False:
                 break
             pose = latLonYaw2Geopose(wp.latitude, wp.longitude, wp.yaw)
 
@@ -55,7 +73,7 @@ class Navigation(Node):
 
             while not self.navigator.isTaskComplete():
                 _ = self.navigator.getFeedback()
-                if self.run_task == False:
+                if self.is_task_running == False:
                     break
         
         on_result(self.navigator.getResult())

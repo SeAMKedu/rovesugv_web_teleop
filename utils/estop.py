@@ -10,9 +10,10 @@ from config import config
 
 
 class EmergencyStop(Node):
+    """ROS 2 node for triggering and reseting the emergency stop."""
 
     def __init__(self):
-        super().__init__(node_name="estop_node")
+        super().__init__(node_name="web_teleop_estop")
         self.client_trigger = self.create_client(
             srv_type=Trigger, 
             srv_name=config.estop_srv.trigger

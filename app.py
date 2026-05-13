@@ -15,16 +15,18 @@ from config import config
 from models import GPSWaypoint
 from utils.estop import EmergencyStop
 from utils.navigation import Navigation
-from utils.teleop import RoverTeleop
+from utils.teleoperation import Teleoperation
 
 
 app = Flask(__name__)
 socketio = SocketIO(app)
 is_estop_triggered = False
 is_navigation_active = False
+nav_data = {}
 
 
 def read_waypoints(route):
+    """Read GPS waypoints from the YAML file."""
     waypoints = []
     with open("waypoints.yaml", "r") as file:
         data: dict = yaml.safe_load(file)
@@ -51,14 +53,17 @@ def index():
 @socketio.event
 def connect():
     """Called when a client connects to the SocketIO server."""
-    message = {"navStatus": is_navigation_active}
+    message = {
+        "isNavActive": is_navigation_active,
+        "navData": nav_data
+    }
     socketio.emit("connection", message)
 
 
 @socketio.event
 def disconnect():
     """Called when the client disconnects from the SocketIO server."""
-    pass
+    print("[INFO] Client has disconnected")
 
 
 @socketio.event
@@ -66,7 +71,7 @@ def e_stop(message: str):
     global is_estop_triggered
     if config.use_sim: # there is no e-stop in simulation
         return
-    if message == "triggered":
+    if message == "trigger":
         estop.trigger()
         is_estop_triggered = True
     elif message == "reset":
@@ -106,10 +111,17 @@ def teleoperate(data: dict):
 
 def on_navigation_result(result: TaskResult):
     """Send the result of the Nav2 task to the connected clients."""
-    global is_navigation_active
+    global is_navigation_active, nav_data
     is_navigation_active = False
-    socketio.emit("nav_status", is_navigation_active)
+    nav_data = {}
+    socketio.emit("nav_active", is_navigation_active)
     socketio.emit("nav_result", result.name)
+    if result.name == "SUCCEEDED":
+        socketio.emit("alert", {"type": "success", "msg": "Goal succeeded"})
+    elif result.name == "CANCELED":
+        socketio.emit("alert", {"type": "warning", "msg": "Goal canceled"})
+    elif result.name == "FAILED":
+        socketio.emit("alert", {"type": "danger", "msg": "Goal failed"})
 
 
 @socketio.event
@@ -121,20 +133,21 @@ def get_waypoints(route: str):
 @socketio.event
 def start_navigation(data: dict):
     """Receive a new navigation task."""
-    global is_navigation_active
+    global is_navigation_active, nav_data
     if is_navigation_active:
         return
     is_navigation_active = True
-    socketio.emit("nav_status", is_navigation_active)
+    socketio.emit("nav_active", is_navigation_active)
 
+    nav_data = data
     goal = data.get("goal")
 
     waypoints = []
     if goal == "mapPoint": # navigate to map point clicked by the user
         waypoints = [GPSWaypoint(
-            latitude=data.get("latitude"),
-            longitude=data.get("longitude"),
-            yaw=data.get("yaw"),
+            latitude=data.get("goalLat"),
+            longitude=data.get("goalLon"),
+            yaw=data.get("goalYaw"),
         )]
     elif goal in ("maptLab", "roboLab"): # navigate to predefined goal pose
         wps = read_waypoints(goal)
@@ -153,18 +166,16 @@ def start_navigation(data: dict):
             )
             waypoints.append(waypoint)
     else:
-        pass
+        print("[ERROR] Invalid goal")
+        on_navigation_result(TaskResult(value=3)) # FAILED
+        return
     navigation.start(waypoints, on_navigation_result)
 
 
 @socketio.event
 def stop_navigation():
     """Cancel the navigation task."""
-    global is_navigation_active
-    is_navigation_active = False
-    socketio.emit("nav_status", is_navigation_active)
-
-    navigation.cancel()
+    navigation.stop()
 
 
 if __name__ == "__main__":
@@ -172,7 +183,8 @@ if __name__ == "__main__":
     if not config.use_sim:
         estop = EmergencyStop()
     navigation = Navigation()
-    teleop = RoverTeleop(config.ros2_topics.teleop)
+    #navigation.navigator.waitUntilNav2Active(localizer="controller_server")
+    teleop = Teleoperation(config.ros2_topics.teleop)
     socketio.run(app, host="0.0.0.0", debug=True)
     if not config.use_sim:
         estop.destroy_node()
