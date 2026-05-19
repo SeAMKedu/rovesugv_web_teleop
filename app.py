@@ -5,30 +5,49 @@
 # Hätäseis-toiminto
 # ros2 service call /panther/hardware/e_stop_trigger std_srvs/srv/Trigger
 # ros2 service call /panther/hardware/e_stop_reset std_srvs/srv/Trigger
+import dataclasses
+import os
+import pathlib
+
 import rclpy
+import yaml
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO
+from nav2_msgs.action._navigate_to_pose import NavigateToPose_Feedback
 from nav2_simple_commander.robot_navigator import TaskResult
 
-import yaml
-from config import config
-from models import GPSWaypoint
+import models
+from cfgreader import config
 from utils.estop import EmergencyStop
 from utils.navigation import Navigation
 from utils.teleoperation import Teleoperation
 
+INIT_ROVER_LATITUDE = 62.789252
+INIT_ROVER_LONGITUDE = 22.821627
+
 
 app = Flask(__name__)
 socketio = SocketIO(app)
-is_estop_triggered = False
-is_navigation_active = False
-nav_data = {}
+
+app_data = models.AppData(
+    estop=models.EStop(),
+    navigation=models.NavigationData(
+        goal_pose=models.Pose(),
+        start_location=models.Location(),
+    ),
+    rover=models.Location(
+        latitude=INIT_ROVER_LATITUDE,
+        longitude=INIT_ROVER_LONGITUDE,
+    ),
+)
 
 
 def read_waypoints(route):
     """Read GPS waypoints from the YAML file."""
+    cwd = pathlib.Path(__file__).parent
+    filepath = os.path.join(cwd, "config", "waypoints.yaml")
     waypoints = []
-    with open("waypoints.yaml", "r") as file:
+    with open(filepath, "r") as file:
         data: dict = yaml.safe_load(file)
         wps = data.get(route, [])
         for wp in wps:
@@ -46,18 +65,17 @@ def index():
     return render_template(
         template, 
         use_sim=config.use_sim,
-        is_estop_triggered=is_estop_triggered,
+        is_estop_triggered=app_data.estop.is_triggered,
     )
 
 
+#-----------------------------------------------------------------------------
+# SocketIO: Connection
+#-----------------------------------------------------------------------------
 @socketio.event
 def connect():
     """Called when a client connects to the SocketIO server."""
-    message = {
-        "isNavActive": is_navigation_active,
-        "navData": nav_data
-    }
-    socketio.emit("connection", message)
+    socketio.emit("connection", dataclasses.asdict(app_data))
 
 
 @socketio.event
@@ -66,19 +84,33 @@ def disconnect():
     print("[INFO] Client has disconnected")
 
 
+#-----------------------------------------------------------------------------
+# Alerts
+#-----------------------------------------------------------------------------
+def send_alert(alert_type: str, alert_message: str):
+    """Send an alert message to client(s)."""
+    socketio.emit("alert", {"type": alert_type, "msg": alert_message})
+
+
+#-----------------------------------------------------------------------------
+# Emergency Stop
+#-----------------------------------------------------------------------------
 @socketio.event
 def e_stop(message: str):
-    global is_estop_triggered
+    """Receive an emenrgency stop message from a client."""
     if config.use_sim: # there is no e-stop in simulation
         return
     if message == "trigger":
         estop.trigger()
-        is_estop_triggered = True
+        app_data.estop.is_triggered = True
     elif message == "reset":
         estop.reset()
-        is_estop_triggered = False
+        app_data.estop.is_triggered = False
 
 
+#-----------------------------------------------------------------------------
+# Telemetry: Callback Functions
+#-----------------------------------------------------------------------------
 @socketio.event
 def on_battery_state(data: dict):
     """Send battery state data to the connected clients."""
@@ -94,6 +126,8 @@ def on_nav_feedback(data: dict):
 @socketio.event
 def on_navsatfix(data: dict):
     """Send the location of the mobile robot to the connected clients."""
+    app_data.rover.latitude = data.get("lat", 0.0)
+    app_data.rover.longitude = data.get("lon", 0.0)
     socketio.emit("navsatfix", data)
 
 
@@ -109,81 +143,107 @@ def teleoperate(data: dict):
     teleop.teleoperate(data)
 
 
+#-----------------------------------------------------------------------------
+# Navigation
+#-----------------------------------------------------------------------------
+def on_navigation_feedback_msg(msg: NavigateToPose_Feedback):
+    """Callback function for navigation feedback message."""
+    # Compute times in seconds.
+    estimated_time_remaining = msg.estimated_time_remaining.sec + \
+        msg.estimated_time_remaining.nanosec / 1_000_000_000
+    navigation_time = msg.navigation_time.sec + \
+        msg.navigation_time.nanosec / 1_000_000_000
+
+    feedback = {
+        "distance_remaining": round(msg.distance_remaining, 1),
+        "estimated_time_remaining": round(estimated_time_remaining, 1),
+        "navigation_time": round(navigation_time, 1),
+        "number_of_recoveries": msg.number_of_recoveries,
+    }
+
+    socketio.emit("nav_feedback", feedback)
+
+
 def on_navigation_result(result: TaskResult):
     """Send the result of the Nav2 task to the connected clients."""
-    global is_navigation_active, nav_data
-    is_navigation_active = False
-    nav_data = {}
-    socketio.emit("nav_active", is_navigation_active)
+    app_data.navigation.is_active = False
+    app_data.navigation.reset_goal()
+
+    socketio.emit("nav_active", False)
     socketio.emit("nav_result", result.name)
-    if result.name == "SUCCEEDED":
-        socketio.emit("alert", {"type": "success", "msg": "Goal succeeded"})
-    elif result.name == "CANCELED":
-        socketio.emit("alert", {"type": "warning", "msg": "Goal canceled"})
-    elif result.name == "FAILED":
-        socketio.emit("alert", {"type": "danger", "msg": "Goal failed"})
+    
+    alert_message = f"Navigation task result: {result.name}"
+    if result.name == TaskResult.SUCCEEDED.name:
+        send_alert(models.AlertType.SUCCESS, alert_message)
+    elif result.name == TaskResult.CANCELED.name:
+        send_alert(models.AlertType.WARNING, alert_message)
+    elif result.name == TaskResult.FAILED.name:
+        send_alert(models.AlertType.DANGER, alert_message)
 
 
 @socketio.event
 def get_waypoints(route: str):
+    """Send GPS waypoints to the client."""
     waypoints = read_waypoints(route)
     socketio.emit("nav_waypoints", waypoints)
 
 
 @socketio.event
-def start_navigation(data: dict):
-    """Receive a new navigation task."""
-    global is_navigation_active, nav_data
-    if is_navigation_active:
+def navigation_task(message: dict):
+    """Receive and run a navigation task sent by client."""
+    print(f"[INFO] New navigation task: {message}")
+
+    if app_data.navigation.is_active:
+        send_alert(models.AlertType.DANGER, "Navigation is already running")
         return
-    is_navigation_active = True
-    socketio.emit("nav_active", is_navigation_active)
+    
+    if message.get("start", False) is True:
+        # Check if the action server is running.
+        if not navigation.action_client.wait_for_server(timeout_sec=10.0):
+            on_navigation_result(TaskResult(value=3)) # 3 = FAILED
+            return
 
-    nav_data = data
-    goal = data.get("goal")
+        nav_goal = message.get("goal", {})
 
-    waypoints = []
-    if goal == "mapPoint": # navigate to map point clicked by the user
-        waypoints = [GPSWaypoint(
-            latitude=data.get("goalLat"),
-            longitude=data.get("goalLon"),
-            yaw=data.get("goalYaw"),
-        )]
-    elif goal in ("maptLab", "roboLab"): # navigate to predefined goal pose
-        wps = read_waypoints(goal)
-        waypoints = [GPSWaypoint(
-            latitude=wps[0][0],
-            longitude=wps[0][1],
-            yaw=wps[0][2]
-        )]
-    elif goal in ("auto2robo", "robo2auto"): # navigate via predefined route
-        wps = read_waypoints(goal)
-        for wp in wps:
-            waypoint = GPSWaypoint(
-                latitude=wp[0],
-                longitude=wp[1],
-                yaw=wp[2]
-            )
-            waypoints.append(waypoint)
+        app_data.navigation.is_active = True
+        app_data.navigation.update_goal(nav_goal)
+
+        waypoints = []
+        # Navigate to a map point clicked by the user
+        if app_data.navigation.goal == "mapPoint":
+            waypoints = [models.GPSWaypoint(
+                latitude=app_data.navigation.goal_pose.latitude,
+                longitude=app_data.navigation.goal_pose.longitude,
+                yaw=app_data.navigation.goal_pose.yaw,
+            )]
+        # Navigate to a predefined goal pose.
+        elif app_data.navigation.goal in ("maptLab", "roboLab"):
+            goal_pose = read_waypoints(app_data.navigation.goal)[0]
+            waypoints = [models.GPSWaypoint(
+                latitude=goal_pose[0], 
+                longitude=goal_pose[1], 
+                yaw=goal_pose[2])
+            ]
+        # Navigate via a predefined route.
+        elif app_data.navigation.goal in ("auto2robo", "robo2auto"):
+            wps = read_waypoints(app_data.navigation.goal)
+            for wp in wps:
+                waypoint = models.GPSWaypoint(wp[0], wp[1], wp[2])
+                waypoints.append(waypoint)
+        # Invalid goal.
+        else:
+            on_navigation_result(TaskResult(value=3)) # FAILED
+            return
+        navigation.start(waypoints)
     else:
-        print("[ERROR] Invalid goal")
-        on_navigation_result(TaskResult(value=3)) # FAILED
-        return
-    navigation.start(waypoints, on_navigation_result)
-
-
-@socketio.event
-def stop_navigation():
-    """Cancel the navigation task."""
-    navigation.stop()
+        navigation.stop()
 
 
 if __name__ == "__main__":
     rclpy.init()
     if not config.use_sim:
         estop = EmergencyStop()
-    navigation = Navigation()
-    #navigation.navigator.waitUntilNav2Active(localizer="controller_server")
+    navigation = Navigation(on_navigation_feedback_msg, on_navigation_result)
     teleop = Teleoperation(config.ros2_topics.teleop)
     socketio.run(app, host="0.0.0.0", debug=True)
     if not config.use_sim:

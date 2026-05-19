@@ -91,7 +91,13 @@
                             <i class="fas fa-location-arrow"></i> {% block navTitle %}{% endblock %}
                         </h5>
                         <hr>
-                        <h6 class="card-subtitle mb-2">{% block navSubtitleTarget %}{% endblock %}</h6>
+                        <button class="btn btn-success mb-2" type="button" id="navStartBtn" onclick="startNav();">
+                            <i class="fas fa-play"></i> {% block navStartButton %}{% endblock %}
+                        </button>
+                        <button class="btn btn-danger mb-2" type="button" onclick="stopNav();">
+                            <i class="fas fa-stop"></i> {% block navStopButton %}{% endblock %}
+                        </button>
+                        <h6 class="card-subtitle mt-2 mb-2">{% block navSubtitleTarget %}{% endblock %}</h6>
                         <div class="mb-3">
                             <select class="form-select" id="navSelect" onmousedown="this.value='';" onchange="setNavGoal(this.value);" >
                                 <option value="mapPoint">{% block navTargetClickMap %}{% endblock %}</option>
@@ -103,26 +109,17 @@
                         </div>
                         <h6 class="card-subtitle mb-2">{% block navSubtitleYaw %}{% endblock %}</h6>
                         <div class="row">
-                            <div class="col-9">
+                            <div class="col-7">
                                 <input class="form-range" type="range" min="-180" max="180" step="5" value="0" id="yawInput">
                             </div>
-                            <div class="col-3">
+                            <div class="col-5">
                                 <i class="fas fa-circle-arrow-right fa-2xl fa-rotate-by" id="yawArrow" style="--fa-rotate-angle: 0deg"></i>
                                 <output for="navYaw" id="yawOutput" aria-hidden="true"></output>
                             </div>
                         </div>
-                        <h6 class="card-subtitle mb-2">{% block navSubtitleControl %}{% endblock %}</h6>
-                        <div class="text-center mb-3">
-                            <button class="btn btn-danger mb-2" type="button" onclick="stopNav();">
-                                <i class="fas fa-circle-xmark"></i> {% block navStopButton %}{% endblock %}
-                            </button>
-                            <button class="btn btn-warning mb-2" type="button" id="navResetBtn" onclick="resetNav();">
-                                <i class="fas fa-arrow-rotate-left"></i> {% block navResetButton %}{% endblock %}
-                            </button>
-                            <button class="btn btn-success mb-2" type="button" id="navStartBtn" onclick="startNav();">
-                                <i class="fas fa-play"></i> {% block navStartButton %}{% endblock %}
-                            </button>
-                        </div>
+                        <button class="btn btn-warning mb-4" type="button" id="navResetBtn" onclick="resetNav();">
+                            <i class="fas fa-arrow-rotate-left"></i> {% block navResetButton %}{% endblock %}
+                        </button>
                         <h6 class="card-subtitle mb-2">{% block navSubtitleFeedback %}{% endblock %}</h6>
                         <div class="table-responsive">
                             <table class="table table-striped">
@@ -156,7 +153,7 @@
 
             <!--Map-->
             <div class="col-lg-8 mb-3">
-                <div id="map" style="height: 560px;"></div>
+                <div id="map" style="height: 600px;"></div>
             </div>
         </div>
 
@@ -272,10 +269,10 @@
                                 <tbody>
                                     <tr>
                                         <td>
-                                            <i class="fas fa-battery-empty" id="batteryPctIcon"></i> <span id="batteryPct">0.0</span><span> %</span>
+                                            <i class="fas fa-battery-empty" id="batteryPctIcon"></i> <span id="batteryPct">0</span><span> %</span>
                                         </td>
                                         <td>
-                                            <i class="fas fa-bolt"></i><span id="batteryCharge">0.0</span><span>/</span><span id="batteryCapacity"></span><span> Ah</span>
+                                            <i class="fas fa-bolt"></i> <span id="batteryCharge">0</span><span>/</span><span id="batteryCapacity">0</span><span> Ah</span>
                                         </td>
                                         <td>
                                             <i class="fas fa-temperature-full"></i><span id="batteryTemp">0.0</span><span> °C</span>

@@ -13,7 +13,7 @@ from nav_msgs.msg import Odometry, Path
 from nav2_msgs.action._navigate_to_pose import NavigateToPose_FeedbackMessage
 from sensor_msgs.msg import BatteryState, NavSatFix
 
-from config import config
+from cfgreader import config
 from utils.gps_utils import euler_from_quaternion
 from utils.telemetry import Telemetry
 from utils.transform import Transform
@@ -144,13 +144,13 @@ def main():
 
     set_origo()
     
-    telemetry = Telemetry(
+    telemetry_node = Telemetry(
         battery_state_topic=config.ros2_topics.battery,
         battery_state_callback=battery_state_callback,
         odom_topic=config.ros2_topics.odom,
         odom_callback=odom_callback,
-        nav_feedback_topic=config.ros2_topics.nav_feedback,
-        nav_feedback_callback=nav_feedback_callback,
+        #nav_feedback_topic=config.ros2_topics.nav_feedback,
+        #nav_feedback_callback=nav_feedback_callback,
         navsatfix_topic=config.ros2_topics.navsatfix,
         navsatfix_callback=navsatfix_callback,
         planned_path_topic=config.ros2_topics.planned_path,
@@ -159,12 +159,12 @@ def main():
     
     try:
         print("Running telemetry node...")
-        rclpy.spin(telemetry)
+        rclpy.spin(telemetry_node)
     except KeyboardInterrupt:
         print("\nStopping telemetry node...")
     finally:
         sio.disconnect()
-        telemetry.destroy_node()
+        telemetry_node.destroy_node()
         rclpy.try_shutdown()
 
 

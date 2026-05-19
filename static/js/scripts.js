@@ -18,22 +18,32 @@ const connStatus = document.getElementById("connStatus");
 
 var socketio = io();
 
-socketio.on("connection", function(connResponse) {
+socketio.on("connection", function(msg) {
     connIcon.classList.remove("fa-link-slash");
     connIcon.classList.remove("fa-fade");
     connIcon.classList.add("fa-link");
     connStatus.classList.add("active");
 
-    console.log(connResponse);
+    console.log(msg);
+    isNavActive = msg.navigation.is_active;
+    roverLat = msg.rover.latitude;
+    roverLon = msg.rover.longitude;
+    roverMarker.setLatLng([roverLat, roverLon]);
+    map.setView([roverLat, roverLon], 19);
 
-    isNavActive = connResponse.isNavActive;
-    navData = connResponse.navData;
     if (isNavActive) {
-        console.log("isNavActive");
         disableTeleop(true);
         setNavState("active");
-        showNavIcon(navData.startLat, navData.startLon, navStartIcon);
-        showNavIcon(navData.goalLat, navData.goalLon, navGoalIcon);
+        showNavIcon(
+            msg.navigation.start_location.latitude, 
+            msg.navigation.start_location.longitude, 
+            navStartIcon
+        );
+        showNavIcon(
+            msg.navigation.goal_pose.latitude, 
+            msg.navigation.goal_pose.longitude, 
+            navGoalIcon
+        );
     }
 
     socketio.on("disconnect", function() {
@@ -78,9 +88,9 @@ function e_stop(message) {
 //----------------------------------------------------------------------------
 // Leaflet Map
 //----------------------------------------------------------------------------
-var mapZoom = 18;
-var roverLat = 62.789252;
-var roverLon = 22.821627;
+var mapZoom = 19;
+var roverLat = 0.0; //62.789252;
+var roverLon = 0.0; //22.821627;
 
 var map = L.map("map", {}).setView([roverLat, roverLon], mapZoom);
 
@@ -138,11 +148,11 @@ map.on("click", function(event) {
         clearMap();
         showNavIcon(roverLat, roverLon, navStartIcon);
         showNavIcon(event.latlng.lat, event.latlng.lng, navGoalIcon);
-        navData = {
+        navGoal = {
             goal: "mapPoint",
-            goalLat: event.latlng.lat,
-            goalLon: event.latlng.lng,
-            goalYaw: yawToRadians(),
+            latitude: event.latlng.lat,
+            longitude: event.latlng.lng,
+            yaw: yawToRadians(),
             startLat: roverLat,
             startLon: roverLon
         };
@@ -169,14 +179,14 @@ const navDistRem = document.getElementById("navDistRem");
 const navNumRecs = document.getElementById("navNumRecs");
 
 var isNavActive = false;
-var navData = {};
+var navGoal = {};
 
-yawOutput.textContent = yawInput.value;
+yawOutput.textContent = `${yawInput.value}°`;
 
 yawInput.addEventListener("input", function() {
     yawArrow.style.transform = `rotate(${-this.value}deg)`;
-    yawOutput.textContent = this.value;
-    navData.goalYaw = parseInt(yawInput.value);
+    yawOutput.textContent = `${this.value}°`;
+    navGoal.yaw = parseInt(yawInput.value);
 });
 
 function yawToRadians() {
@@ -185,11 +195,11 @@ function yawToRadians() {
 
 function setNavGoal(selectedGoal) {
     clearMap();
-    navData = {goal: selectedGoal};
+    navGoal = {goal: selectedGoal};
     if (selectedGoal === "mapPoint") {
-        navData.startLat = roverLat;
-        navData.startLon = roverLon;
-        navData.goalYaw = parseInt(yawInput.value);
+        navGoal.latitude = roverLat;
+        navGoal.longitude = roverLon;
+        navGoal.yaw = parseInt(yawInput.value);
         return;
     }
     socketio.emit("get_waypoints", selectedGoal);
@@ -226,7 +236,7 @@ function setNavState(state) {
 
         clearMap();
 
-        navData = {};
+        navGoal = {};
     }
 };
 
@@ -242,11 +252,11 @@ function startNav() {
         return;
     }
     setNavState("active");
-    socketio.emit("start_navigation", navData);
+    socketio.emit("navigation_task", {start: true, goal: navGoal});
 };
 
 function stopNav() {
-    socketio.emit("stop_navigation");
+    socketio.emit("navigation_task", {start: false});
 };
 
 async function onNavResult() {
@@ -264,7 +274,7 @@ socketio.on("nav_active", function(navigation_status) {
 
 socketio.on("nav_feedback", function(msg) {
     navNavTime.innerHTML = msg.navigation_time;
-    navTimeRem.innerHTML = msg.estimated_time_remainging;
+    navTimeRem.innerHTML = msg.estimated_time_remaining;
     navDistRem.innerHTML = msg.distance_remaining;
     navNumRecs.innerHTML = msg.number_of_recoveries;
 });
@@ -325,6 +335,7 @@ const angularSpeed = 0.5;
 
 var roverSpeed = 0.5;
 var isTeleopEnabled = false;
+var teleopTimer = null;
 
 disableTeleop(true);
 
@@ -381,7 +392,7 @@ function teleop(linearSpeedX, angularSpeedZ) {
 };
 
 function startTeleop(direction) {
-    var teleopTimer = setInterval(function() {
+    teleopTimer = setInterval(function() {
         let speed = getRoverSpeed(direction, roverSpeed);
         teleop(speed.linear, speed.angular);
     }, teleopTimeout);
@@ -464,7 +475,7 @@ socketio.on("navsatfix", function(msg) {
         [roverLat, roverLon],
         [msg.arrowhead.lat, msg.arrowhead.lon]
     ]]).arrowheads().addTo(map);
-    roverMarker.setLatLng([roverLat, roverLon]).addTo(map);
+    roverMarker.setLatLng([roverLat, roverLon]);
 });
 
 function setMapView() {

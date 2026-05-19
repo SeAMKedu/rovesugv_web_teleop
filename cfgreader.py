@@ -1,6 +1,12 @@
+import os
+import pathlib
+
 import attrs
 import cattrs
 import yaml
+
+cwd = pathlib.Path(__file__).parent
+filepath = os.path.join(cwd, "config", "app.yaml")
 
 
 @attrs.define
@@ -33,7 +39,7 @@ class Config:
     use_sim: bool
     
 
-with open("config.yaml", "r") as config_file:
+with open(filepath, "r") as config_file:
     cfg = yaml.safe_load(config_file)
     key = "sim" if cfg["use_sim"] else "robot"
 

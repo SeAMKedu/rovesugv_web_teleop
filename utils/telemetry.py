@@ -7,7 +7,7 @@ from sensor_msgs.msg import BatteryState, NavSatFix
 
 
 class Telemetry(Node):
-    """ROS 2 node for telemetry."""
+    """Telemetry node for collecting data and sending it to web application."""
 
     def __init__(
             self,
@@ -15,8 +15,8 @@ class Telemetry(Node):
             battery_state_callback: Callable[[BatteryState], None],
             odom_topic: str,
             odom_callback: Callable[[Odometry], None],
-            nav_feedback_topic: str,
-            nav_feedback_callback: Callable[[NavigateToPose_FeedbackMessage], None],
+            #nav_feedback_topic: str,
+            #nav_feedback_callback: Callable[[NavigateToPose_FeedbackMessage], None],
             navsatfix_topic: str,
             navsatfix_callback: Callable[[NavSatFix], None],
             planned_path_topic: str,
@@ -28,8 +28,8 @@ class Telemetry(Node):
         self.battery_state_callback = battery_state_callback
         self.odom_topic = odom_topic
         self.odom_callback = odom_callback
-        self.nav_feedback_topic = nav_feedback_topic
-        self.nav_feedback_callback = nav_feedback_callback
+        #self.nav_feedback_topic = nav_feedback_topic
+        #self.nav_feedback_callback = nav_feedback_callback
         self.navsatfix_topic = navsatfix_topic
         self.navsatfix_callback = navsatfix_callback
         self.planned_path_topic = planned_path_topic
@@ -48,12 +48,12 @@ class Telemetry(Node):
             callback=self.odom_callback,
             qos_profile=10,
         )
-        self.nav_feedback_subscription = self.create_subscription(
-            msg_type=NavigateToPose_FeedbackMessage,
-            topic=self.nav_feedback_topic,
-            callback=self.nav_feedback_callback,
-            qos_profile=10,
-        )
+        # self.nav_feedback_subscription = self.create_subscription(
+        #     msg_type=NavigateToPose_FeedbackMessage,
+        #     topic=self.nav_feedback_topic,
+        #     callback=self.nav_feedback_callback,
+        #     qos_profile=10,
+        # )
         self.navsatfix_subscription = self.create_subscription(
             msg_type=NavSatFix,
             topic=self.navsatfix_topic,
@@ -66,5 +66,3 @@ class Telemetry(Node):
             callback=self.planned_path_callback,
             qos_profile=10,
         )
-    
-

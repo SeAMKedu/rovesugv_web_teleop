@@ -6,7 +6,7 @@ import rclpy
 from rclpy.node import Node
 from std_srvs.srv import Trigger
 
-from config import config
+from cfgreader import config
 
 
 class EmergencyStop(Node):

@@ -3,6 +3,7 @@ from typing import Callable
 import rclpy
 from geometry_msgs.msg import PoseStamped
 from nav2_msgs.action import NavigateToPose
+from nav2_msgs.action._navigate_to_pose import NavigateToPose_Feedback
 from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
 from rclpy.action import ActionClient
 from rclpy.node import Node
@@ -13,11 +14,25 @@ from utils.gps_utils import latLonYaw2Geopose
 
 
 class Navigation(Node):
-    """ROS 2 node for GPS navigation."""
+    """
+    Navigation node.
 
-    def __init__(self):
-        super().__init__(node_name="web_teleop_nav")
-        self.is_task_running = False
+    :param on_feedback_msg: Callback function for navigation feedback message.
+    :param on_task_result: Callback function for navigation task result.
+
+    """
+
+    def __init__(
+            self,
+            on_feedback_msg: Callable[[NavigateToPose_Feedback], None],
+            on_task_result: Callable[[TaskResult], None]
+        ):
+        super().__init__(node_name="web_teleop_navigation")
+
+        self.on_feedback_msg = on_feedback_msg
+        self.on_task_result = on_task_result
+
+        self.is_active = False
         self.navigator = BasicNavigator()
         self.srvclient = self.create_client(FromLL, "/fromLL")
         self.action_client = ActionClient(
@@ -27,30 +42,17 @@ class Navigation(Node):
         )
     
 
-    def _check_action_server(self, timeout_sec=5.0) -> bool:
-        """Check if the action server is available."""
-        return self.action_client.wait_for_server(timeout_sec=timeout_sec)
+    def start(self, gps_waypoints: list[GPSWaypoint]):
+        """
+        Start a navigation task.
 
+        :param gps_waypoints: List of GPS waypoints of the route to be driven.
 
-    def stop(self):
-        """Stop the ongoing navigation task."""
-        if self.is_task_running:
-            self.navigator.cancelTask()
-            self.is_task_running = False
-
-
-    def start(self, gps_waypoints: list[GPSWaypoint], on_result: Callable[[TaskResult], None]):
-        """Start a navigation task."""
-        is_server_available = self._check_action_server()
-        
-        if not is_server_available:
-            on_result(TaskResult(value=0)) # UNKNOWN
-            return
-
-        self.is_task_running = True
+        """
+        self.is_active = True
 
         for wp in gps_waypoints:
-            if self.is_task_running == False:
+            if self.is_active is False:
                 break
             pose = latLonYaw2Geopose(wp.latitude, wp.longitude, wp.yaw)
 
@@ -72,8 +74,15 @@ class Navigation(Node):
             self.navigator.goToPose(goal_pose)
 
             while not self.navigator.isTaskComplete():
-                _ = self.navigator.getFeedback()
-                if self.is_task_running == False:
+                feedback = self.navigator.getFeedback()
+                self.on_feedback_msg(feedback)
+                if self.is_active is False:
                     break
         
-        on_result(self.navigator.getResult())
+        self.on_task_result(self.navigator.getResult())
+
+
+    def stop(self):
+        """Stop the ongoing navigation task."""
+        self.navigator.cancelTask()
+        self.is_active = False
