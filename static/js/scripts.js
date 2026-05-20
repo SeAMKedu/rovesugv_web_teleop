@@ -32,18 +32,25 @@ socketio.on("connection", function(msg) {
     map.setView([roverLat, roverLon], 19);
 
     if (isNavActive) {
+        navStatus.innerHTML = "ACTIVE";
+        navSelect.disabled = true;
+        yawInput.disabled = true;
+        navResetBtn.disabled = true;
+        navStartBtn.disabled = true;
+        teleopSwitch.disabled = true;
         disableTeleop(true);
-        setNavState("active");
-        showNavIcon(
+        showNavMarker(
             msg.navigation.start_location.latitude, 
             msg.navigation.start_location.longitude, 
             navStartIcon
         );
-        showNavIcon(
+        showNavMarker(
             msg.navigation.goal_pose.latitude, 
             msg.navigation.goal_pose.longitude, 
             navGoalIcon
         );
+    } else {
+        teleopSwitch.disabled = false;
     }
 
     socketio.on("disconnect", function() {
@@ -70,8 +77,8 @@ const showAlert = (alertType, alertMessage) => {
     alertPlaceholder.append(wrapper);
 };
 
-socketio.on("alert", function(alertMessage) {
-    showAlert(alertMessage.type, alertMessage.msg);
+socketio.on("alert", function(msg) {
+    showAlert(msg.type, msg.message);
 });
 
 
@@ -80,35 +87,58 @@ socketio.on("alert", function(alertMessage) {
 //----------------------------------------------------------------------------
 const eStopButton = document.getElementById("eStopButton");
 
+
 function e_stop(message) {
     socketio.emit("e_stop", message);
 };
 
 
 //----------------------------------------------------------------------------
-// Leaflet Map
+// Map
 //----------------------------------------------------------------------------
-var mapZoom = 19;
-var roverLat = 0.0; //62.789252;
-var roverLon = 0.0; //22.821627;
-
-var map = L.map("map", {}).setView([roverLat, roverLon], mapZoom);
+var map = L.map("map", {});
 
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 }).addTo(map);
 
-var navIconLayer = L.layerGroup();
-var navWaypoints = L.polyline([]);
+var navStartIcon = L.icon({
+    iconUrl: "/static/img/navStart.png",
+    iconSize: [34, 34]
+});
+
+var navGoalIcon = L.icon({
+    iconUrl: "/static/img/navGoal.png",
+    iconSize: [36, 35]
+});
+
+var navMarkerLayer = L.layerGroup();
+map.addLayer(navMarkerLayer);
+
+var navWaypoints = L.polyline([], {color: "green"}).arrowheads({
+    frequency: "50px",
+    size: "10px"
+}).addTo(map);
+
 var plannedPath = L.polyline([], {color: "red"});
-map.addLayer(navIconLayer);
+
 
 function clearMap() {
-    navIconLayer.clearLayers();
+    navMarkerLayer.clearLayers();
     navWaypoints.remove();
     plannedPath.remove();
 };
+
+
+function showNavMarker(latitude, longitude, navIcon) {
+    let markerLocation = L.latLng(latitude, longitude);
+    L.marker(markerLocation, {icon: navIcon}).addTo(navMarkerLayer);
+};
+
+// Rover
+var roverLat = 0.0;
+var roverLon = 0.0;
 
 var roverArrow = L.polyline([
     [roverLat, roverLon],
@@ -124,40 +154,6 @@ var roverMarker = L.marker(
     [roverLat, roverLon], 
     {icon: roverIcon}
 ).addTo(map);
-
-var navStartIcon = L.icon({
-    iconUrl: "/static/img/navStart.png",
-    iconSize: [34, 34]
-});
-
-var navGoalIcon = L.icon({
-    iconUrl: "/static/img/navGoal.png",
-    iconSize: [36, 35]
-});
-
-function showNavIcon(latitude, longitude, navIcon) {
-    let location = L.latLng(latitude, longitude);
-    L.marker(location, {icon: navIcon}).addTo(navIconLayer);
-};
-
-map.on("click", function(event) {
-    if (isNavActive) {
-        return;
-    }
-    if (navSelect.value === "mapPoint") {
-        clearMap();
-        showNavIcon(roverLat, roverLon, navStartIcon);
-        showNavIcon(event.latlng.lat, event.latlng.lng, navGoalIcon);
-        navGoal = {
-            goal: "mapPoint",
-            latitude: event.latlng.lat,
-            longitude: event.latlng.lng,
-            yaw: yawToRadians(),
-            startLat: roverLat,
-            startLon: roverLon
-        };
-    }
-});
 
 
 //----------------------------------------------------------------------------
@@ -183,94 +179,118 @@ var navGoal = {};
 
 yawOutput.textContent = `${yawInput.value}°`;
 
+
 yawInput.addEventListener("input", function() {
     yawArrow.style.transform = `rotate(${-this.value}deg)`;
     yawOutput.textContent = `${this.value}°`;
-    navGoal.yaw = parseInt(yawInput.value);
+    navGoal.yaw = yawToRadians();
 });
+
 
 function yawToRadians() {
     return parseInt(yawInput.value) * Math.PI / 180;
 };
 
+
+map.on("click", function(event) {
+    if (isNavActive) {
+        showAlert("warning", "Navigation is running");
+        return;
+    }
+    if (navSelect.value === "mapPoint") {
+        clearMap();
+        showNavMarker(roverLat, roverLon, navStartIcon);
+        showNavMarker(event.latlng.lat, event.latlng.lng, navGoalIcon);
+        navGoal = {
+            goal: navSelect.value,
+            latitude: event.latlng.lat,
+            longitude: event.latlng.lng,
+            yaw: yawToRadians(),
+            startLat: roverLat,
+            startLon: roverLon
+        };
+    }
+});
+
+
 function setNavGoal(selectedGoal) {
     clearMap();
-    navGoal = {goal: selectedGoal};
+    navGoal.goal = selectedGoal;
     if (selectedGoal === "mapPoint") {
-        navGoal.latitude = roverLat;
-        navGoal.longitude = roverLon;
-        navGoal.yaw = parseInt(yawInput.value);
         return;
     }
     socketio.emit("get_waypoints", selectedGoal);
 };
 
-function setNavState(state) {
-    if (state === "active") {
-        navSelect.disabled = true;
-        yawInput.disabled = true;
-        navResetBtn.disabled = true;
-        navStartBtn.disabled = true;
-
-        navStatus.innerHTML = "ACTIVE";
-
-        teleopSwitch.disabled = true;
-
-    } else if (state === "reset") {
-        yawArrow.style.transform = `rotate(0deg)`;
-        yawInput.value = "0";
-        yawOutput.textContent = yawInput.value;
-
-        navSelect.disabled = false;
-        yawInput.disabled = false;
-        navResetBtn.disabled = false;
-        navStartBtn.disabled = false;
-
-        navStatus.innerHTML = "PENDING";
-        navNavTime.innerHTML = 0.0.toFixed(1);
-        navTimeRem.innerHTML = 0.0.toFixed(1);
-        navDistRem.innerHTML = 0.0.toFixed(1);
-        navNumRecs.innerHTML = 0;
-
-        teleopSwitch.disabled = false;
-
-        clearMap();
-
-        navGoal = {};
-    }
-};
-
-function resetNav() {
-    if (isNavActive) {
-        return;
-    }
-    setNavState("reset");
-};
 
 function startNav() {
     if (isNavActive) {
+        showAlert("warning", "Navigation is running");
         return;
     }
-    setNavState("active");
-    socketio.emit("navigation_task", {start: true, goal: navGoal});
+    if (Object.keys(navGoal).length === 0) {
+        showAlert("danger", "No navigation goal set");
+        return;
+    }
+    if (navSelect.value === "mapPoint") {
+        navGoal.yaw = yawToRadians();
+        navGoal.startLat = roverLat;
+        navGoal.startLon = roverLon;
+        if (!("latitude" in navGoal)) {
+            showAlert("danger", "No goal point set. Please click the map.");
+            return;
+        }
+    } else if (navSelect.value === "maptLab" || navSelect.value === "roboLab") {
+        navGoal.startLat = roverLat;
+        navGoal.startLon = roverLon;
+    }
+
+    isNavActive = true;
+    
+    navStatus.innerHTML = "ACTIVE";
+    navSelect.disabled = true;
+    yawInput.disabled = true;
+    navResetBtn.disabled = true;
+    navStartBtn.disabled = true;
+    teleopSwitch.disabled = true;
+    
+    socketio.emit("navigation_task", {task: "start", goal: navGoal});
 };
+
+
+function resetNav() {
+    if (isNavActive) {
+        showAlert("warning", "Navigation is running");
+        return;
+    }
+    yawArrow.style.transform = `rotate(0deg)`;
+    yawInput.value = "0";
+    yawOutput.textContent = `${yawInput.value}°`;
+
+    navSelect.disabled = false;
+    yawInput.disabled = false;
+    navResetBtn.disabled = false;
+    navStartBtn.disabled = false;
+
+    navStatus.innerHTML = "PENDING";
+    navNavTime.innerHTML = 0.0.toFixed(1);
+    navTimeRem.innerHTML = 0.0.toFixed(1);
+    navDistRem.innerHTML = 0.0.toFixed(1);
+    navNumRecs.innerHTML = 0;
+
+    teleopSwitch.disabled = false;
+
+    clearMap();
+
+    navGoal = {};
+};
+
 
 function stopNav() {
-    socketio.emit("navigation_task", {start: false});
+    navGoal = {};
+    socketio.emit("navigation_task", {task: "stop", goal: navGoal});
 };
 
-async function onNavResult() {
-    await sleep(5000);
-    setNavState("reset");
-    const alertClose = document.getElementById("alertClose");
-    if (alertClose) {
-        alertClose.click();
-    }
-}
-
-socketio.on("nav_active", function(navigation_status) {
-    isNavActive = navigation_status;
-});
 
 socketio.on("nav_feedback", function(msg) {
     navNavTime.innerHTML = msg.navigation_time;
@@ -279,37 +299,62 @@ socketio.on("nav_feedback", function(msg) {
     navNumRecs.innerHTML = msg.number_of_recoveries;
 });
 
+
 socketio.on("nav_path", function(msg) {
-    plannedPath.setLatLngs(msg.path).addTo(map);
+    plannedPath.setLatLngs(msg.path).addTo(map);;
 });
 
-socketio.on("nav_result", function(msg) {
-    if (msg === "UNKNOWN") {
-        showAlert("danger", "Error: Nav2 is not active");
+
+async function onNavResult() {
+    await sleep(5000);
+    resetNav();
+    const alertClose = document.getElementById("alertClose");
+    if (alertClose) {
+        alertClose.click();
     }
-    navStatus.innerHTML = msg;
+};
+
+
+socketio.on("nav_result", function(msg) {
+    isNavActive = false;
+    navStatus.innerHTML = msg.result;
     onNavResult();
 });
 
-socketio.on("nav_waypoints", function(waypoints) {
-    let startPoint = waypoints[0];
-    let goalPoint = waypoints[waypoints.length-1];
-    navWaypoints.remove();
-    navWaypoints = L.polyline(waypoints, {color: "green"}).arrowheads({
-        frequency: "50px",
-        size: "10px"
-    }).addTo(map);
-    if (startPoint === goalPoint) {
-        showNavIcon(roverLat, roverLon, navStartIcon);
+
+socketio.on("nav_status", function(msg) {
+    isNavActive = msg.is_active;
+});
+
+
+socketio.on("nav_waypoints", function(msg) {
+    let firstWaypoint = msg.waypoints[0];
+    let lastWaypoint = msg.waypoints[msg.waypoints.length - 1];
+    let startLatitude = 0.0;
+    let startLongitude = 0.0;
+    
+    if (firstWaypoint === lastWaypoint) {
+        startLatitude = roverLat;
+        startLongitude = roverLon;
     } else {
-        showNavIcon(startPoint[0], startPoint[1], navStartIcon);
+        startLatitude = firstWaypoint[0];
+        startLongitude = firstWaypoint[1];
     }
-    showNavIcon(goalPoint[0], goalPoint[1], navGoalIcon);
+    
+    navWaypoints.setLatLngs(msg.waypoints).addTo(map);
+    showNavMarker(startLatitude, startLongitude, navStartIcon);
+    showNavMarker(lastWaypoint[0], lastWaypoint[1], navGoalIcon);
+    
+    navGoal.latitude = lastWaypoint[0];
+    navGoal.longitude = lastWaypoint[1];
+    navGoal.yaw = lastWaypoint[2];
+    navGoal.startLat = startLatitude;
+    navGoal.startLon = startLongitude;
 });
 
 
 //----------------------------------------------------------------------------
-// Teleop
+// Teleoperation
 //----------------------------------------------------------------------------
 const teleopStatus = document.getElementById("teleopStatus");
 const teleopSwitch = document.getElementById("teleopSwitch");
@@ -337,7 +382,6 @@ var roverSpeed = 0.5;
 var isTeleopEnabled = false;
 var teleopTimer = null;
 
-disableTeleop(true);
 
 function disableTeleop(isDisabled) {
     let teleopButtons = [
@@ -350,6 +394,7 @@ function disableTeleop(isDisabled) {
         teleopButtons[i].disabled = isDisabled;
     }
 };
+
 
 function getRoverSpeed(direction, linearSpeed) {
     let speeds = {
@@ -366,6 +411,7 @@ function getRoverSpeed(direction, linearSpeed) {
     return speeds[direction]
 };
 
+
 function setRoverSpeed(direction) {
     if (direction === -1) {
         roverSpeed = roverSpeed - 0.1;
@@ -381,6 +427,7 @@ function setRoverSpeed(direction) {
     teleopSpeed.value = Math.round(roverSpeed * 10) / 10;
 };
 
+
 function teleop(linearSpeedX, angularSpeedZ) {
     if (teleopSwitch.checked) {
         let speedValues = {
@@ -391,6 +438,7 @@ function teleop(linearSpeedX, angularSpeedZ) {
     }
 };
 
+
 function startTeleop(direction) {
     teleopTimer = setInterval(function() {
         let speed = getRoverSpeed(direction, roverSpeed);
@@ -398,10 +446,12 @@ function startTeleop(direction) {
     }, teleopTimeout);
 }
 
+
 async function stopTeleop() {
     clearInterval(teleopTimer);
     teleop(0.0, 0.0);
 }
+
 
 teleopSwitch.addEventListener("click", function() {
     if (this.checked) {
@@ -457,30 +507,33 @@ teleopButton7.addEventListener("touchend", () => { stopTeleop(); });
 teleopButton8.addEventListener("touchend", () => { stopTeleop(); });
 teleopButton9.addEventListener("touchend", () => { stopTeleop(); });
 
+disableTeleop(true);
+
 
 //----------------------------------------------------------------------------
-// Location
+// Location Information
 //----------------------------------------------------------------------------
 const locationLat = document.getElementById("locationLat");
 const locationLon = document.getElementById("locationLon");
 const locationAlt = document.getElementById("locationAlt");
 
+function setMapView() {
+    map.setView([roverLat, roverLon], 19);
+};
+
 socketio.on("navsatfix", function(msg) {
-    roverLat = msg.lat;
-    roverLon = msg.lon;
-    locationLat.innerHTML = msg.lat.toFixed(9);
-    locationLon.innerHTML = msg.lon.toFixed(9);
-    locationAlt.innerHTML = msg.alt.toFixed(1);
+    roverLat = msg.latitude;
+    roverLon = msg.longitude;
+    locationLat.innerHTML = msg.latitude.toFixed(9);
+    locationLon.innerHTML = msg.longitude.toFixed(9);
+    locationAlt.innerHTML = msg.altitude.toFixed(1);
     roverArrow.setLatLngs([[
         [roverLat, roverLon],
-        [msg.arrowhead.lat, msg.arrowhead.lon]
-    ]]).arrowheads().addTo(map);
+        [msg.arrowhead.latitude, msg.arrowhead.longitude]
+    ]]).arrowheads();
     roverMarker.setLatLng([roverLat, roverLon]);
 });
 
-function setMapView() {
-    map.setView([roverLat, roverLon], mapZoom);
-};
 
 //----------------------------------------------------------------------------
 // Telemetry

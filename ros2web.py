@@ -97,12 +97,12 @@ def navsatfix_callback(msg: NavSatFix):
     lock.release()
 
     data = {
-        "alt": round(msg.altitude, 9),
-        "lat": round(msg.latitude, 9),
-        "lon": round(msg.longitude, 9),
+        "altitude": round(msg.altitude, 9),
+        "latitude": round(msg.latitude, 9),
+        "longitude": round(msg.longitude, 9),
         "arrowhead": {
-            "lat": arrow_head.latitude,
-            "lon": arrow_head.longitude,
+            "latitude": arrow_head.latitude,
+            "longitude": arrow_head.longitude,
         }
     }
     sio.emit("on_navsatfix", data)

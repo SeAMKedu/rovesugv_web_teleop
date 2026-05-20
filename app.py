@@ -89,7 +89,7 @@ def disconnect():
 #-----------------------------------------------------------------------------
 def send_alert(alert_type: str, alert_message: str):
     """Send an alert message to client(s)."""
-    socketio.emit("alert", {"type": alert_type, "msg": alert_message})
+    socketio.emit("alert", {"type": alert_type, "message": alert_message})
 
 
 #-----------------------------------------------------------------------------
@@ -126,8 +126,8 @@ def on_nav_feedback(data: dict):
 @socketio.event
 def on_navsatfix(data: dict):
     """Send the location of the mobile robot to the connected clients."""
-    app_data.rover.latitude = data.get("lat", 0.0)
-    app_data.rover.longitude = data.get("lon", 0.0)
+    app_data.rover.latitude = data.get("latitude", 0.0)
+    app_data.rover.longitude = data.get("longitude", 0.0)
     socketio.emit("navsatfix", data)
 
 
@@ -169,8 +169,8 @@ def on_navigation_result(result: TaskResult):
     app_data.navigation.is_active = False
     app_data.navigation.reset_goal()
 
-    socketio.emit("nav_active", False)
-    socketio.emit("nav_result", result.name)
+    socketio.emit("nav_result", {"result": result.name})
+    socketio.emit("nav_status", {"is_active": False})
     
     alert_message = f"Navigation task result: {result.name}"
     if result.name == TaskResult.SUCCEEDED.name:
@@ -185,7 +185,7 @@ def on_navigation_result(result: TaskResult):
 def get_waypoints(route: str):
     """Send GPS waypoints to the client."""
     waypoints = read_waypoints(route)
-    socketio.emit("nav_waypoints", waypoints)
+    socketio.emit("nav_waypoints", {"waypoints": waypoints})
 
 
 @socketio.event
@@ -193,11 +193,12 @@ def navigation_task(message: dict):
     """Receive and run a navigation task sent by client."""
     print(f"[INFO] New navigation task: {message}")
 
-    if app_data.navigation.is_active:
-        send_alert(models.AlertType.DANGER, "Navigation is already running")
-        return
-    
-    if message.get("start", False) is True:
+    task = message.get("task", "")
+
+    if task == "start":
+        if app_data.navigation.is_active:
+            send_alert(models.AlertType.DANGER, "Navigation is already running")
+            return
         # Check if the action server is running.
         if not navigation.action_client.wait_for_server(timeout_sec=10.0):
             on_navigation_result(TaskResult(value=3)) # 3 = FAILED
@@ -234,9 +235,14 @@ def navigation_task(message: dict):
         else:
             on_navigation_result(TaskResult(value=3)) # FAILED
             return
+        socketio.emit("nav_status", {"is_active": True})
         navigation.start(waypoints)
-    else:
+
+    elif task == "stop":
         navigation.stop()
+    
+    else:
+        on_navigation_result(TaskResult(value=3))
 
 
 if __name__ == "__main__":
