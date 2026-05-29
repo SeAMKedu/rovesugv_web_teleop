@@ -34,7 +34,8 @@ class NavigationData:
     goal_pose: Pose
     start_location: Location
     goal: str = "NA"
-    is_active: bool = False
+    is_nav2_active: bool = False
+    is_running: bool = False
 
     def update_goal(self, new_goal: dict):
         self.goal = new_goal.get("goal", "NA")

@@ -42,7 +42,6 @@ def battery_state_callback(msg: BatteryState):
         "capacity": round(msg.design_capacity, 1),
         "charge": round(msg.charge, 1),
         "percentage": round(100 * msg.percentage, 1),
-        "temperature": round(msg.temperature, 1),
     }
     sio.emit("on_battery_state", data)
 

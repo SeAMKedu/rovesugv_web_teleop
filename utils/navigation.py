@@ -8,6 +8,7 @@ from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from robot_localization.srv import FromLL
+from std_srvs.srv import Trigger
 
 from models import GPSWaypoint
 from utils.gps_utils import latLonYaw2Geopose
@@ -40,6 +41,20 @@ class Navigation(Node):
             action_type=NavigateToPose,
             action_name="navigate_to_pose"
         )
+    
+
+    def check_state(self):
+        """Check if the Navigation 2 stack is active."""
+        service_name = "/lifecycle_manager_navigation/is_active"
+        client = self.create_client(Trigger, service_name)
+        is_ready = client.wait_for_service(timeout_sec=10)
+        if not is_ready:
+            return False
+        request = Trigger.Request()
+        future = client.call_async(request)
+        rclpy.spin_until_future_complete(self, future)
+        response: Trigger.Response = future.result()
+        return response.success
     
 
     def start(self, gps_waypoints: list[GPSWaypoint]):

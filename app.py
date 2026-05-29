@@ -166,11 +166,10 @@ def on_navigation_feedback_msg(msg: NavigateToPose_Feedback):
 
 def on_navigation_result(result: TaskResult):
     """Send the result of the Nav2 task to the connected clients."""
-    app_data.navigation.is_active = False
+    app_data.navigation.is_running = False
     app_data.navigation.reset_goal()
 
     socketio.emit("nav_result", {"result": result.name})
-    socketio.emit("nav_status", {"is_active": False})
     
     alert_message = f"Navigation task result: {result.name}"
     if result.name == TaskResult.SUCCEEDED.name:
@@ -189,6 +188,13 @@ def get_waypoints(route: str):
 
 
 @socketio.event
+def on_nav2_state(is_active: bool):
+    print("on_nav2_state()", is_active)
+    app_data.navigation.is_nav2_active = is_active
+    socketio.emit("nav2_state", {"is_active": is_active})
+
+
+@socketio.event
 def navigation_task(message: dict):
     """Receive and run a navigation task sent by client."""
     print(f"[INFO] New navigation task: {message}")
@@ -196,7 +202,7 @@ def navigation_task(message: dict):
     task = message.get("task", "")
 
     if task == "start":
-        if app_data.navigation.is_active:
+        if app_data.navigation.is_running:
             send_alert(models.AlertType.DANGER, "Navigation is already running")
             return
         # Check if the action server is running.
@@ -206,7 +212,7 @@ def navigation_task(message: dict):
 
         nav_goal = message.get("goal", {})
 
-        app_data.navigation.is_active = True
+        app_data.navigation.is_running = True
         app_data.navigation.update_goal(nav_goal)
 
         waypoints = []
@@ -235,7 +241,6 @@ def navigation_task(message: dict):
         else:
             on_navigation_result(TaskResult(value=3)) # FAILED
             return
-        socketio.emit("nav_status", {"is_active": True})
         navigation.start(waypoints)
 
     elif task == "stop":
@@ -250,6 +255,7 @@ if __name__ == "__main__":
     if not config.use_sim:
         estop = EmergencyStop()
     navigation = Navigation(on_navigation_feedback_msg, on_navigation_result)
+    app_data.navigation.is_nav2_active = navigation.check_state()
     teleop = Teleoperation(config.ros2_topics.teleop)
     socketio.run(app, host="0.0.0.0", debug=True)
     if not config.use_sim:

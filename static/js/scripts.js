@@ -25,14 +25,24 @@ socketio.on("connection", function(msg) {
     connStatus.classList.add("active");
 
     console.log(msg);
-    isNavActive = msg.navigation.is_active;
+    isNav2StackActive = msg.navigation.is_nav2_active;
+    isNavTaskRunning = msg.navigation.is_running;
     roverLat = msg.rover.latitude;
     roverLon = msg.rover.longitude;
     roverMarker.setLatLng([roverLat, roverLon]);
     map.setView([roverLat, roverLon], 19);
 
-    if (isNavActive) {
-        navStatus.innerHTML = "ACTIVE";
+    if (isNav2StackActive) {
+        navState.innerHTML = "ACTIVE";
+        navStateRow.classList.remove("table-danger");
+        navStateRow.classList.add("table-success");
+    } else {
+        navState.innerHTML = "UNKNOWN";
+        navStateRow.classList.remove("table-success");
+        navStateRow.classList.add("table-danger");
+    }
+
+    if (isNavTaskRunning) {
         navSelect.disabled = true;
         yawInput.disabled = true;
         navResetBtn.disabled = true;
@@ -49,6 +59,9 @@ socketio.on("connection", function(msg) {
             msg.navigation.goal_pose.longitude, 
             navGoalIcon
         );
+        if (msg.navigation.goal === "robo2auto" || msg.navigation.goal === "auto2robo") {
+            socketio.emit("get_waypoints", msg.navigation.goal);
+        }
     } else {
         teleopSwitch.disabled = false;
     }
@@ -159,6 +172,9 @@ var roverMarker = L.marker(
 //----------------------------------------------------------------------------
 // Navigation
 //----------------------------------------------------------------------------
+const navState = document.getElementById("navState");
+const navStateRow = document.getElementById("navStateRow");
+
 const navSelect = document.getElementById("navSelect");
 
 const yawArrow = document.getElementById("yawArrow");
@@ -168,13 +184,13 @@ const yawOutput = document.getElementById("yawOutput");
 const navResetBtn = document.getElementById("navResetBtn");
 const navStartBtn = document.getElementById("navStartBtn");
 
-const navStatus = document.getElementById("navStatus");
 const navNavTime = document.getElementById("navNavTime");
 const navTimeRem = document.getElementById("navTimeRem");
 const navDistRem = document.getElementById("navDistRem");
 const navNumRecs = document.getElementById("navNumRecs");
 
-var isNavActive = false;
+var isNav2StackActive = false;
+var isNavTaskRunning = false;
 var navGoal = {};
 
 yawOutput.textContent = `${yawInput.value}°`;
@@ -193,7 +209,7 @@ function yawToRadians() {
 
 
 map.on("click", function(event) {
-    if (isNavActive) {
+    if (isNavTaskRunning) {
         showAlert("warning", "Navigation is running");
         return;
     }
@@ -224,7 +240,7 @@ function setNavGoal(selectedGoal) {
 
 
 function startNav() {
-    if (isNavActive) {
+    if (isNavTaskRunning) {
         showAlert("warning", "Navigation is running");
         return;
     }
@@ -245,9 +261,8 @@ function startNav() {
         navGoal.startLon = roverLon;
     }
 
-    isNavActive = true;
+    isNavTaskRunning = true;
     
-    navStatus.innerHTML = "ACTIVE";
     navSelect.disabled = true;
     yawInput.disabled = true;
     navResetBtn.disabled = true;
@@ -259,7 +274,7 @@ function startNav() {
 
 
 function resetNav() {
-    if (isNavActive) {
+    if (isNavTaskRunning) {
         showAlert("warning", "Navigation is running");
         return;
     }
@@ -272,7 +287,6 @@ function resetNav() {
     navResetBtn.disabled = false;
     navStartBtn.disabled = false;
 
-    navStatus.innerHTML = "PENDING";
     navNavTime.innerHTML = 0.0.toFixed(1);
     navTimeRem.innerHTML = 0.0.toFixed(1);
     navDistRem.innerHTML = 0.0.toFixed(1);
@@ -316,14 +330,22 @@ async function onNavResult() {
 
 
 socketio.on("nav_result", function(msg) {
-    isNavActive = false;
-    navStatus.innerHTML = msg.result;
+    isNavTaskRunning = false;
     onNavResult();
 });
 
 
-socketio.on("nav_status", function(msg) {
-    isNavActive = msg.is_active;
+socketio.on("nav2_state", function(msg) {
+    isNav2StackActive = msg.is_active;
+    if (isNav2StackActive) {
+        navState.innerHTML = "ACTIVE";
+        navStateRow.classList.remove("table-danger");
+        navStateRow.classList.add("table-success");
+    } else {
+        navState.innerHTML = "UNKNOWN";
+        navStateRow.classList.remove("table-success");
+        navStateRow.classList.add("table-danger");
+    }
 });
 
 
@@ -516,6 +538,7 @@ disableTeleop(true);
 const locationLat = document.getElementById("locationLat");
 const locationLon = document.getElementById("locationLon");
 const locationAlt = document.getElementById("locationAlt");
+const locationTracker = document.getElementById("locationTracker");
 
 function setMapView() {
     map.setView([roverLat, roverLon], 19);
@@ -532,6 +555,9 @@ socketio.on("navsatfix", function(msg) {
         [msg.arrowhead.latitude, msg.arrowhead.longitude]
     ]]).arrowheads();
     roverMarker.setLatLng([roverLat, roverLon]);
+    if (locationTracker.checked) {
+        map.setView([roverLat, roverLon], 19);
+    }
 });
 
 
@@ -542,7 +568,6 @@ const batteryPctIcon = document.getElementById("batteryPctIcon");
 const batteryPct = document.getElementById("batteryPct");
 const batteryCharge = document.getElementById("batteryCharge");
 const batteryCapacity = document.getElementById("batteryCapacity");
-const batteryTemp = document.getElementById("batteryTemp");
 
 socketio.on("battery_state", function(msg) {
     batteryPctIcon.classList.remove(...batteryPctIcon.classList);
@@ -563,5 +588,4 @@ socketio.on("battery_state", function(msg) {
     batteryPct.innerHTML = msg.percentage.toFixed(1);
     batteryCharge.innerHTML = msg.charge.toFixed(1);
     batteryCapacity.innerHTML = msg.capacity;
-    batteryTemp.innerHTML = msg.temperature.toFixed(1);
 });

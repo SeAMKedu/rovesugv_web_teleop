@@ -91,6 +91,16 @@
                             <i class="fas fa-location-arrow"></i> {% block navTitle %}{% endblock %}
                         </h5>
                         <hr>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <tbody>
+                                    <tr class="table-danger" id="navStateRow">
+                                        <th scope="row">Navigation 2</th>
+                                        <td><span id="navState">UNKNOWN</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                         <button class="btn btn-success mb-2" type="button" id="navStartBtn" onclick="startNav();">
                             <i class="fas fa-play"></i> {% block navStartButton %}{% endblock %}
                         </button>
@@ -124,10 +134,6 @@
                         <div class="table-responsive">
                             <table class="table table-striped">
                                 <tbody>
-                                    <tr>
-                                        <th scope="row">{% block navStatus %}{% endblock %}</th>
-                                        <td><pre><span id="navStatus">PENDING</span></pre></td>
-                                    </tr>
                                     <tr>
                                         <th scope="row">{% block navNavTime %}{% endblock %}</th>
                                         <td><span id="navNavTime">0.0</span><span> s</span></td>
@@ -250,7 +256,15 @@
                             </table>
                         </div>
 
-                        <button class="btn btn-primary" type="button" onclick="setMapView()">{% block locationButton %}{% endblock %}</button>
+                        <button class="btn btn-primary mb-2" type="button" onclick="setMapView()">
+                            {% block locationButton %}{% endblock %}
+                        </button>
+                        <div class="form-check mb-2">
+                            <input type="checkbox" class="form-check-input" id="locationTracker">
+                            <label for="locationTracker" class="form-check-label">
+                                {% block locationTrack %}{% endblock %}
+                            </label>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -273,9 +287,6 @@
                                         </td>
                                         <td>
                                             <i class="fas fa-bolt"></i> <span id="batteryCharge">0</span><span>/</span><span id="batteryCapacity">0</span><span> Ah</span>
-                                        </td>
-                                        <td>
-                                            <i class="fas fa-temperature-full"></i><span id="batteryTemp">0.0</span><span> °C</span>
                                         </td>
                                     </tr>
                                 </tbody>
