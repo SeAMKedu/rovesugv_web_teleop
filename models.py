@@ -26,7 +26,7 @@ class GPSWaypoint(Pose):
 
 @dataclass
 class EStop:
-    is_triggered: bool = False
+    is_triggered: bool = True
 
 
 @dataclass
@@ -56,13 +56,13 @@ class NavigationData:
 
 @dataclass
 class AppData:
-    estop: EStop
+    e_stop: EStop
     navigation: NavigationData
     rover: Location
 
 
 data = AppData(
-    estop=EStop(),
+    e_stop=EStop(),
     navigation=NavigationData(
         goal_pose=Pose(),
         start_location=Location(),

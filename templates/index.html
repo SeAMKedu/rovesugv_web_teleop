@@ -278,7 +278,7 @@
                         </h5>
                         <hr>
                         <h6 class="card-subtitle mb-2">{% block telemetrySubtitleBattery %}{% endblock %}</h6>
-                        <div class="table-responsive">
+                        <div class="table-responsive mb-2">
                             <table class="table table-striped">
                                 <tbody>
                                     <tr>
@@ -292,11 +292,37 @@
                                 </tbody>
                             </table>
                         </div>
+                        <h6 class="card-subtitle mb-2">{% block telemetrySubtitleCamera %}{% endblock %}</h6>
+                        <button class="btn btn-primary mb-2" type="button" data-bs-toggle="modal" data-bs-target="#cameraModal">
+                            {% block telemetryCameraOpen %}{% endblock %}
+                        </button>
                     </div>
                 </div>
             </div>
 
         </div>
+
+        <div class="modal fade" id="cameraModal" tabindex="-1" aria-labelledby="videoStreamModal" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-video"></i> {% block telemetryCameraTitle %}{% endblock %}
+                        </h5>
+                        <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <img id="telemetryCamera" width="480" alt="video-stream-from-camera">
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-danger" type="button" data-bs-dismiss="modal">
+                            {% block telemetryCameraClose %}{% endblock %}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <footer class="text-center">
             <p>Icons by Fontawesome</p>
             <a href="https://fontawesome.com/icons/classic/solid/arrow-down">arrow-down</a>

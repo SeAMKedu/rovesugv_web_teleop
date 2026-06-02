@@ -1,38 +1,38 @@
-sim:
-  battery_topic:
-  odom_topic: /odometry/global
-  nav_feedback_topic: /navigate_to_pose/_action/feedback
-  navsatfix_topic: /gps/fix
-  planned_path_topic: /plan
-  teleop_topic: /cmd_vel
-  estop_srv_trigger:
-  estop_srv_reset: 
-
-robot:
-  battery_topic: /panther/battery/battery_status
-  odom_topic: /fixposition/odometry_enu_smooth
-  nav_feedback_topic: /navigate_to_pose/_action/feedback
-  navsatfix_topic: /fixposition/odometry_llh
-  planned_path_topic: /plan
-  teleop_topic: /panther/cmd_vel
-  estop_srv_trigger: /panther/hardware/e_stop_trigger
-  estop_srv_reset: /panther/hardware/e_stop_reset
+# Server address information
+app:
+  address:
+    host: 127.0.0.1
+    port: 5000
 
 # If true, teleoperate a mobile robot in Gazebo simulator
-use_sim: true
+use_sim: false
 
-app:
-  host: 127.0.0.1
-  port: 5000
+# Names of the topics and services of the real Husarion Panther mobile robot.
+robot:
+  services:
+    e_stop_reset: /panther/hardware/e_stop_reset
+    e_stop_trigger: /panther/hardware/e_stop_trigger
+  topics:
+    battery_status: /panther/battery/battery_status
+    camera: /zed_rear/zed_node_1/rgb/color/rect/image
+    e_stop: /panther/hardware/e_stop
+    odom: /fixposition/odometry_enu_smooth
+    nav_feedback: /navigate_to_pose/_action/feedback
+    navsatfix: /fixposition/odometry_llh
+    planned_path: /plan
+    teleop: /panther/cmd_vel
 
-# All values below are filled by "config.py"
-ros2_topics:
-  battery:
-  odom:
-  nav_feedback:
-  navsatfix:
-  planned_path:
-  teleop:
-estop_srv:
-  trigger:
-  reset: 
+# Names of the topics and servives of the mobile robot in Gazebo simulator.
+sim:
+  services:
+    e_stop_reset: 
+    e_stop_trigger:  
+  topics:
+    battery_status: 
+    camera: /camera/front/image_raw
+    e_stop: 
+    odom: /odometry/global
+    nav_feedback: /navigate_to_pose/_action/feedback
+    navsatfix: /gps/fix
+    planned_path: /plan
+    teleop: /cmd_vel

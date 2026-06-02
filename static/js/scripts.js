@@ -25,6 +25,7 @@ socketio.on("connection", function(msg) {
     connStatus.classList.add("active");
 
     console.log(msg);
+    isEStopTriggered = msg.e_stop.is_triggered;
     isNav2StackActive = msg.navigation.is_nav2_active;
     isNavTaskRunning = msg.navigation.is_running;
     roverLat = msg.rover.latitude;
@@ -40,6 +41,15 @@ socketio.on("connection", function(msg) {
         navState.innerHTML = "UNKNOWN";
         navStateRow.classList.remove("table-success");
         navStateRow.classList.add("table-danger");
+    }
+
+    if (isEStopTriggered) {
+        navSelect.disabled = true;
+        yawInput.disabled = true;
+        navResetBtn.disabled = true;
+        navStartBtn.disabled = true;
+        teleopSwitch.disabled = true;
+        disableTeleop(true);
     }
 
     if (isNavTaskRunning) {
@@ -100,10 +110,35 @@ socketio.on("alert", function(msg) {
 //----------------------------------------------------------------------------
 const eStopButton = document.getElementById("eStopButton");
 
+var isEStopTriggered = false;
+
 
 function e_stop(message) {
     socketio.emit("e_stop", message);
 };
+
+
+socketio.on("e_stop_status", function(msg) {
+    if (msg.data) {
+        navSelect.disabled = true;
+        yawInput.disabled = true;
+        navResetBtn.disabled = true;
+        navStartBtn.disabled = true;
+        teleopSwitch.disabled = true;
+        disableTeleop(true);
+        showAlert("danger", "E-Stop triggered");
+    } else {
+        if (!isNavTaskRunning) {
+            navSelect.disabled = false;
+            yawInput.disabled = false;
+            navResetBtn.disabled = false;
+            navStartBtn.disabled = false;
+            teleopSwitch.disabled = false;
+            disableTeleop(false);
+        }
+        showAlert("success", "E-Stop released");
+    }
+});
 
 
 //----------------------------------------------------------------------------
@@ -569,7 +604,7 @@ const batteryPct = document.getElementById("batteryPct");
 const batteryCharge = document.getElementById("batteryCharge");
 const batteryCapacity = document.getElementById("batteryCapacity");
 
-socketio.on("battery_state", function(msg) {
+socketio.on("battery_status", function(msg) {
     batteryPctIcon.classList.remove(...batteryPctIcon.classList);
     batteryPctIcon.classList.add("fas");
 
@@ -588,4 +623,12 @@ socketio.on("battery_state", function(msg) {
     batteryPct.innerHTML = msg.percentage.toFixed(1);
     batteryCharge.innerHTML = msg.charge.toFixed(1);
     batteryCapacity.innerHTML = msg.capacity;
+});
+
+
+const telemetryCamera = document.getElementById("telemetryCamera");
+
+
+socketio.on("video_stream", function(data) {
+    telemetryCamera.src = "data:image/jpeg;base64," + data;
 });

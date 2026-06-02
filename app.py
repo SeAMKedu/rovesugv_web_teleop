@@ -15,6 +15,7 @@ from flask import Flask, render_template, request
 from flask_socketio import SocketIO
 from nav2_msgs.action._navigate_to_pose import NavigateToPose_Feedback
 from nav2_simple_commander.robot_navigator import TaskResult
+from std_msgs.msg import Bool
 
 import models
 from cfgreader import config
@@ -30,7 +31,7 @@ app = Flask(__name__)
 socketio = SocketIO(app)
 
 app_data = models.AppData(
-    estop=models.EStop(),
+    e_stop=models.EStop(),
     navigation=models.NavigationData(
         goal_pose=models.Pose(),
         start_location=models.Location(),
@@ -62,10 +63,11 @@ def index():
     language_code = request.args.get("lang", "fi")
     default_template = "lang_fi.html"
     template = "lang_en.html" if language_code == "en" else default_template
+    print(f"[DEBUG] {app_data=}")
     return render_template(
         template, 
         use_sim=config.use_sim,
-        is_estop_triggered=app_data.estop.is_triggered,
+        is_estop_triggered=app_data.e_stop.is_triggered,
     )
 
 
@@ -102,19 +104,25 @@ def e_stop(message: str):
         return
     if message == "trigger":
         estop.trigger()
-        app_data.estop.is_triggered = True
     elif message == "reset":
         estop.reset()
-        app_data.estop.is_triggered = False
+
+
+@socketio.event
+def on_e_stop_status(msg: dict):
+    """Update the status of the emergency stop."""
+    print(f"[INFO] E-stop triggered: {msg['data']}")
+    app_data.e_stop.is_triggered = msg["data"]
+    socketio.emit("e_stop_status", msg)
 
 
 #-----------------------------------------------------------------------------
 # Telemetry: Callback Functions
 #-----------------------------------------------------------------------------
 @socketio.event
-def on_battery_state(data: dict):
+def on_battery_status(data: dict):
     """Send battery state data to the connected clients."""
-    socketio.emit("battery_state", data)
+    socketio.emit("battery_status", data)
 
 
 @socketio.event
@@ -141,6 +149,15 @@ def on_nav_path(data: dict):
 def teleoperate(data: dict):
     """Teleoperate the mobile robot."""
     teleop.teleoperate(data)
+
+
+#-----------------------------------------------------------------------------
+# Video Streams
+#-----------------------------------------------------------------------------
+@socketio.event
+def relay_video_stream(data: bytes):
+    """Relay video stream from the front camera."""
+    socketio.emit("video_stream", data)
 
 
 #-----------------------------------------------------------------------------
@@ -189,7 +206,6 @@ def get_waypoints(route: str):
 
 @socketio.event
 def on_nav2_state(is_active: bool):
-    print("on_nav2_state()", is_active)
     app_data.navigation.is_nav2_active = is_active
     socketio.emit("nav2_state", {"is_active": is_active})
 
@@ -255,8 +271,8 @@ if __name__ == "__main__":
     if not config.use_sim:
         estop = EmergencyStop()
     navigation = Navigation(on_navigation_feedback_msg, on_navigation_result)
-    app_data.navigation.is_nav2_active = navigation.check_state()
-    teleop = Teleoperation(config.ros2_topics.teleop)
+    #app_data.navigation.is_nav2_active = navigation.check_state()
+    teleop = Teleoperation(config.topics.teleop)
     socketio.run(app, host="0.0.0.0", debug=True)
     if not config.use_sim:
         estop.destroy_node()

@@ -1,17 +1,22 @@
+import base64
 import math
 import sys
 from threading import Lock
 from typing import Sequence
 
+import cv2
 import geopy.distance
+import imutils
 import rclpy
 import socketio
 import socketio.exceptions
+from cv_bridge import CvBridge
 from geometry_msgs.msg import PoseStamped, Quaternion
 from geographic_msgs.msg import GeoPoint
 from nav_msgs.msg import Odometry, Path
 from nav2_msgs.action._navigate_to_pose import NavigateToPose_FeedbackMessage
-from sensor_msgs.msg import BatteryState, NavSatFix
+from sensor_msgs.msg import BatteryState, Image, NavSatFix
+from std_msgs.msg import Bool
 
 from cfgreader import config
 from utils.gps_utils import euler_from_quaternion
@@ -25,6 +30,8 @@ sio = socketio.SimpleClient()
 # Latitude and longitude of point (x=0, y=0).
 origo_ll = GeoPoint()
 
+cv_bridge = CvBridge()
+
 
 def set_origo():
     """When Nav2 is started, set origo as latitude and longitude."""
@@ -36,14 +43,35 @@ def set_origo():
     print(f"[INFO] {origo_ll=}")
     
 
-def battery_state_callback(msg: BatteryState):
+def battery_status_callback(msg: BatteryState):
     """Called when a battery state message is published."""
     data = {
         "capacity": round(msg.design_capacity, 1),
         "charge": round(msg.charge, 1),
         "percentage": round(100 * msg.percentage, 1),
     }
-    sio.emit("on_battery_state", data)
+    sio.emit("on_battery_status", data)
+
+
+def camera_callback(msg: Image):
+    """Called when a video stream image is published."""
+    # Convert ROS 2 image to OpenCV image.
+    cv_image = cv_bridge.imgmsg_to_cv2(msg)
+    #cv_image = imutils.resize(cv_image, width=320)
+    # Encode to JPEG.
+    success, buffer = cv2.imencode(".jpg", cv_image)
+    # Encode to bytes.
+    encoded = base64.b64encode(buffer).decode("utf-8")
+    sio.emit("relay_video_stream", encoded)
+
+
+def e_stop_status_callback(msg: Bool):
+    """Called when e-stop status message is published."""
+    if msg.data is True:
+        print("[INFO] E-Stop triggered")
+    else:
+        print("[INFO] E-Stop reseted")
+    sio.emit("on_e_stop_status", {"data": msg.data})
 
 
 def odom_callback(msg: Odometry):
@@ -134,25 +162,31 @@ def planned_path_callback(msg: Path):
 
 def main():
     try:
-        sio.connect(url=f"http://{config.app.host}:{config.app.port}")
+        host = config.app.address.host
+        port = config.app.address.port
+        sio.connect(url=f"http://{host}:{port}")
     except socketio.exceptions.ConnectionError:
         print("Could not connect to the SocketIO server, exiting...")
         return sys.exit(1)
     
     rclpy.init()
 
-    set_origo()
+    #set_origo()
     
     telemetry_node = Telemetry(
-        battery_state_topic=config.ros2_topics.battery,
-        battery_state_callback=battery_state_callback,
-        odom_topic=config.ros2_topics.odom,
+        battery_status_topic=config.topics.battery_status,
+        battery_status_callback=battery_status_callback,
+        camera_topic=config.topics.camera,
+        camera_callback=camera_callback,
+        e_stop_status_topic=config.topics.e_stop,
+        e_stop_status_callback=e_stop_status_callback,
+        odom_topic=config.topics.odom,
         odom_callback=odom_callback,
-        #nav_feedback_topic=config.ros2_topics.nav_feedback,
+        #nav_feedback_topic=config.topics.nav_feedback,
         #nav_feedback_callback=nav_feedback_callback,
-        navsatfix_topic=config.ros2_topics.navsatfix,
+        navsatfix_topic=config.topics.navsatfix,
         navsatfix_callback=navsatfix_callback,
-        planned_path_topic=config.ros2_topics.planned_path,
+        planned_path_topic=config.topics.planned_path,
         planned_path_callback=planned_path_callback,
     )
     
