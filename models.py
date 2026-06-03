@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 
-class AlertType:
+class AlertType(Enum):
     SUCCESS = "success"
     WARNING = "warning"
     DANGER = "danger"

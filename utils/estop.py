@@ -30,12 +30,11 @@ class EmergencyStop(Node):
         request = Trigger.Request()
         future = self.client_trigger.call_async(request)
         try:
-            print("[INFO] Sending E-Stop trigger request")
             rclpy.spin_until_future_complete(self, future)
             response: Trigger.Response = future.result()
-            print(f"[INFO] E-Stop trigger response: {response}")
+            print(f"[INFO] E-Stop service call response: {response}")
         except RuntimeError as error:
-            print(f"[ERROR] {error}")
+            print(f"[ERROR] E-Stop trigger: {error}")
 
 
     def reset(self):
@@ -44,9 +43,8 @@ class EmergencyStop(Node):
         request = Trigger.Request()
         future = self.client_reset.call_async(request)
         try:
-            print("[INFO] Sending E-Stop trigger request")
             rclpy.spin_until_future_complete(self, future)
             response: Trigger.Response = future.result()
-            print(f"[INFO] E-Stop trigger response: {response}")
+            print(f"[INFO] E-Stop service call response: {response}")
         except RuntimeError as error:
-            print(f"[ERROR] {error}")
+            print(f"[ERROR] E-Stop reset: {error}")

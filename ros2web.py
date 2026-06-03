@@ -67,10 +67,6 @@ def camera_callback(msg: Image):
 
 def e_stop_status_callback(msg: Bool):
     """Called when e-stop status message is published."""
-    if msg.data is True:
-        print("[INFO] E-Stop triggered")
-    else:
-        print("[INFO] E-Stop reseted")
     sio.emit("on_e_stop_status", {"data": msg.data})
 
 
@@ -171,7 +167,7 @@ def main():
     
     rclpy.init()
 
-    #set_origo()
+    set_origo()
     
     telemetry_node = Telemetry(
         battery_status_topic=config.topics.battery_status,

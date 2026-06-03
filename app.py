@@ -1,10 +1,3 @@
-# TODO
-# Pantherin nollapisteen määritys
-# ros2 service call /toLL robot_localization/srv/ToLL
-#
-# Hätäseis-toiminto
-# ros2 service call /panther/hardware/e_stop_trigger std_srvs/srv/Trigger
-# ros2 service call /panther/hardware/e_stop_reset std_srvs/srv/Trigger
 import dataclasses
 import os
 import pathlib
@@ -111,7 +104,10 @@ def e_stop(message: str):
 @socketio.event
 def on_e_stop_status(msg: dict):
     """Update the status of the emergency stop."""
-    print(f"[INFO] E-stop triggered: {msg['data']}")
+    if msg["data"] is True:
+        print("[INFO] E-stop triggered")
+    else:
+        print("[INFO] E-Stop reset")
     app_data.e_stop.is_triggered = msg["data"]
     socketio.emit("e_stop_status", msg)
 
@@ -271,7 +267,7 @@ if __name__ == "__main__":
     if not config.use_sim:
         estop = EmergencyStop()
     navigation = Navigation(on_navigation_feedback_msg, on_navigation_result)
-    #app_data.navigation.is_nav2_active = navigation.check_state()
+    app_data.navigation.is_nav2_active = navigation.check_state()
     teleop = Teleoperation(config.topics.teleop)
     socketio.run(app, host="0.0.0.0", debug=True)
     if not config.use_sim:

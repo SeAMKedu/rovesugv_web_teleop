@@ -50,6 +50,9 @@ socketio.on("connection", function(msg) {
         navStartBtn.disabled = true;
         teleopSwitch.disabled = true;
         disableTeleop(true);
+        eStopCommand.innerHTML = "Reset";
+    } else {
+        eStopCommand.innerHTML = "Trigger";
     }
 
     if (isNavTaskRunning) {
@@ -109,6 +112,7 @@ socketio.on("alert", function(msg) {
 // Emergency Stop
 //----------------------------------------------------------------------------
 const eStopButton = document.getElementById("eStopButton");
+const eStopCommand = document.getElementById("eStopCommand");
 
 var isEStopTriggered = false;
 
@@ -127,6 +131,7 @@ socketio.on("e_stop_status", function(msg) {
         teleopSwitch.disabled = true;
         disableTeleop(true);
         showAlert("danger", "E-Stop triggered");
+        eStopCommand.innerHTML = "Reset";
     } else {
         if (!isNavTaskRunning) {
             navSelect.disabled = false;
@@ -137,7 +142,10 @@ socketio.on("e_stop_status", function(msg) {
             disableTeleop(false);
         }
         showAlert("success", "E-Stop released");
+        eStopCommand.innerHTML = "Trigger";
     }
+    await sleep(2000);
+    location.reload();
 });
 
 
