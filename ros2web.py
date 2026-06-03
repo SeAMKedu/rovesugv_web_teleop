@@ -187,7 +187,7 @@ def main():
     )
     
     try:
-        print("Running telemetry node...")
+        print("Running telemetry node, press Ctrl+c to stop")
         rclpy.spin(telemetry_node)
     except KeyboardInterrupt:
         print("\nStopping telemetry node...")
