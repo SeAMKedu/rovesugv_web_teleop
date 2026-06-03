@@ -18,33 +18,84 @@ $ sudo apt install ros-humble-nav2-bringup
 ```
 
 ## How to
-Simulaattori on saatavilla osoitteessa [https://github.com/SeAMKedu/rovesugv_navsim](https://github.com/SeAMKedu/rovesugv_navsim).
+Etäohjattavaa mobiilirobottia varten on kehitetty kaksi eri ROS 2 -pakettia.
+* [https://github.com/SeAMKedu/rovesugv_navsim](https://github.com/SeAMKedu/rovesugv_navsim)
+* [https://github.com/SeAMKedu/rovesugv_gps_nav](https://github.com/SeAMKedu/rovesugv_gps_nav)
 
-ROS 2 -paketti Husarion Panther -mobiilirobotin GPS-navigointiin on puolestaan saatavilla osoitteessa [https://github.com/SeAMKedu/rovesugv_gps_nav](https://github.com/SeAMKedu/rovesugv_gps_nav).
+Ensimmäinen on tarkoitettu simuloitua, itse tehtyä mobiilirobottia varten. Robotti toimii Gazebo Fortress -simulaattorissa, joka sisältää Framin ja sen lähialueen karttapohjan ja rakennukset.
 
-Konfiguraationtiedostossa [config.yaml](/config.yaml) on **use_sim** parametri, jossa määritetään ohjataanko 
+Jälkimmäinen paketti on tarkoitettu oikeaa, fyysistä Husarion Panther -mobiilirobottia varten. Pantherin antureihin kuuluu muun muassa Velodyne-LiDAR ja Fixposition Vision RTK-2 -satelliittivastaanotin.
+
+Konfiguraationtiedostossa [app.yaml](/config/app.yaml) on **use_sim** parametri, jossa määritetään ohjataanko 
 * simulaatiossa toimivaa robottia (use_sim: true)
 * tai oikeaa Husarion Panther -mobiilirobottia (use_sim: false).
 
-Käynnistä ensimmäisessä terminaalissa verkkopalvelin alla olevilla komennoilla.
-```
-$ cd rovesugv_web_teleop
-$ source env/bin/activate
-$ python3 app.py
-```
+### Ohjelmien asennus
 
-Käynnistä simulaattori tai Pantherin GPS-navigointiin tarvittavat ohjelmat.
-
-Käynnistä toisessa terminaalissa ROS 2 -sovellus alla olevilla komennoilla.
+Kopioi ensin tiedostot omalle koneellesi.
 ```
-$ cd rovesugv_web_teleop
-$ source env/bin/activate
-$ python3 ros2web.py
+git clone https://github.com/SeAMKedu/rovesugv_web_teleop.git
 ```
 
-Mene sitten selaimella osoitteeseen [http://127.0.0.1:5000](http://127.0.0.1:5000). 
+Siirry kopioituun kansioon.
+```
+cd rovesugv_web_teleop/
+```
 
-Sovellus on testattu toimivan myös mobiililaitteen verkkoselaimen avulla. Mobiililaiteen ja tietokoneen, jolla verkkosovellusta ajetaan, on tällöin oltava samassa aliverkossa.
+Luo seuraavaksi virtuaaliympäristö Pythonin **venv** paketin avulla.
+```
+python3 -m venv env
+```
+
+Aktivoi virtuaaliympäristö.
+```
+source env/bin/activate
+```
+
+Asenna tarvittavat Python-paketit.
+```
+pip3 install -r requirements.txt
+```
+### Nav2:sen käynnistys
+
+Käynnistä joko simulaattori tai Pantherin GPS-navigaatio -paketti. Nav2-kirjaston on oltava käynnissä, että mobiilirobotin navigaatio on mahdollista.
+
+### Terminaali #1: Palvelimen käynnistys
+
+Aktivoi virtuaaliympäristö (vain, jos ei ole vielä aktiivinen).
+```
+source env/bin/activate
+```
+
+Palvelimen perustana on Flask-paketti. Flask-SocketIO-paketti mahdollistaa kaksisuuntaisen kommunikaation palvelimen ja verkkoselaimen välillä. Palvelin käynnistyy alla olevalla komennolla.
+```
+python3 app.py
+```
+
+Mene sitten verkkoselaimella osoitteeseen [http://127.0.0.1:5000](http://127.0.0.1:5000).
+
+Terminaalissa, jossa palvelinta agetaan, tulisi näkyä myös toinen verkko-osoite. Avaamalla kyseisen verkko-osoitteen mobiililaitteessa, mobiilirobottia voidaan ohjata mobiililaitteen avulla. Mobiililaiteen ja tietokoneen, jolla palvelinta ajetaan, tulee olla samassa aliverkossa. Bootstrap CSS -ohjelmistokehyksen ansiosta verkkosivun sisältö mukautuu mobiililaitteen näytön kokoon.
+
+Palvelin sammuu painamalla terminaalissa Ctrl+c.
+
+### Terminaali #2: Telemetria-noodin käynnistys
+
+Avaa toinen terminaali **rovesugv_web_teleop** kansiossa ja aktivoi virtuaaliympäristö.
+```
+source env/bin/activate
+```
+Käynnistä **telemetry** noodi, joka tilaa eri ROS 2 -aiheita ja välittää niihin julkaistuja viestejä palvelimelle.
+```
+python3 ros2web.py
+```
+
+Noodin ajon saa lopetettu painamalla Ctrl+c.
+
+Huomautus: virtuaaliympäristön voi deaktivoida komennolla:
+```
+deactivate
+```
+
 
 ## Tekijätiedot
 
