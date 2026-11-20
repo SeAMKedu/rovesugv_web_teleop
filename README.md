@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/1171372866.svg)](https://doi.org/10.5281/zenodo.24388825)
+
 ![hankelogo](/images/rovesugv_logo.png)
 
 # rovesugv_web_teleop
